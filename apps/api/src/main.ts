@@ -39,7 +39,7 @@ async function bootstrap() {
   const exposeDocs = !isProd || process.env.EXPOSE_DOCS === 'true';
   if (exposeDocs) {
     const config = new DocumentBuilder()
-      .setTitle('Nuvita API')
+      .setTitle('Nuvita Psi API')
       .setDescription('SaaS de gestão clínica — autenticação, pacientes, prontuários, agendamentos, financeiro e telemedicina')
       .setVersion('0.1.0')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')

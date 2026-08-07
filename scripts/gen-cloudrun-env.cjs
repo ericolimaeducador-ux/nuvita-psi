@@ -14,13 +14,13 @@
 const fs = require('fs');
 const path = require('path');
 
-// Origens permitidas no CORS em produção (frontend + apex). localhost p/ dev local.
+// Origens permitidas no CORS em produção. nuvita-psi roda como subdomínio do
+// Nuvita original (psi.nuvita.app.br); localhost p/ dev local.
 const PROD_ORIGINS = [
-  'https://www.nuvita.app.br',
-  'https://nuvita.app.br',
+  'https://psi.nuvita.app.br',
   'http://localhost:5173',
 ];
-const PROD_ROOT_DOMAIN = 'nuvita.app.br';
+const PROD_ROOT_DOMAIN = 'psi.nuvita.app.br';
 const envFile = path.join(__dirname, '..', 'apps', 'api', '.env');
 const outFile = path.join(__dirname, '..', 'cloudrun.env.yaml');
 
@@ -50,6 +50,6 @@ const yaml = Object.entries(vars)
 fs.writeFileSync(outFile, yaml);
 console.log(`✓ Gerado ${outFile} com ${Object.keys(vars).length} variáveis.`);
 console.log('  (arquivo está no .gitignore — contém segredos, NÃO commitar)');
-console.log('\nPróximo passo: gcloud run deploy nuvita-api --source . \\');
+console.log('\nPróximo passo: gcloud run deploy nuvita-psi-api --project nuvita-499800 --source . \\');
 console.log('  --region southamerica-east1 --allow-unauthenticated \\');
 console.log('  --env-vars-file cloudrun.env.yaml');

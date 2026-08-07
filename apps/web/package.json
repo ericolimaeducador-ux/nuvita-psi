@@ -1,8 +1,8 @@
 {
-  "name": "@nuvita/web",
+  "name": "@nuvita-psi/web",
   "version": "0.1.0",
   "private": true,
-  "description": "Frontend web do Nuvita (painel clinico/hospitalar)",
+  "description": "Frontend web do Nuvita Psi (painel para clinicas de psicologia)",
   "type": "module",
   "scripts": {
     "dev": "vite",

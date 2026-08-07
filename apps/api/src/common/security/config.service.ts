@@ -104,9 +104,6 @@ export interface AppConfig {
 
   // Logging
   logLevel: 'debug' | 'info' | 'warn' | 'error';
-
-  // IA (pré-preenchimento de relatório médico judiciário)
-  geminiApiKey?: string;
 }
 
 @Injectable()
@@ -167,7 +164,6 @@ export class AppConfigService {
         appRootDomain,
         bootstrapSecret,
         prontuarioSignatureSecret,
-        geminiApiKey,
       ] = await Promise.all([
         this.getSecretOrThrow('mongodb-uri'),
         this.getSecretOrThrow('redis-url'),
@@ -191,11 +187,10 @@ export class AppConfigService {
         this.getSecretOrDefault('zapi-instance-id', undefined),
         this.getSecretOrDefault('zapi-token', undefined),
         this.getSecretOrDefault('zapi-client-token', undefined),
-        this.getSecretOrDefault('totp-issuer', 'Nuvita'),
+        this.getSecretOrDefault('totp-issuer', 'Nuvita Psi'),
         this.getSecretOrThrow('app-root-domain'),
         this.getSecretOrThrow('bootstrap-secret'),
         this.getSecretOrThrow('prontuario-signature-secret'),
-        this.getSecretOrDefault('gemini-api-key', undefined),
       ]);
 
       const config: AppConfig = {
@@ -226,17 +221,16 @@ export class AppConfigService {
         zapiInstanceId,
         zapiToken,
         zapiClientToken,
-        totpIssuer: totpIssuer ?? 'Nuvita',
+        totpIssuer: totpIssuer ?? 'Nuvita Psi',
         appRootDomain,
         bootstrapSecret,
         prontuarioSignatureSecret,
-        geminiApiKey,
         allowPublicRegistration: resolveAllowPublicRegistration(
           (process.env.NODE_ENV as AppConfig['nodeEnv']) || 'production',
         ),
         gcpProjectId: process.env.GCP_PROJECT_ID!,
-        kmsKeyRing: process.env.KMS_KEY_RING || 'nuvita-keyring',
-        kmsKey: process.env.KMS_KEY || 'nuvita-master-key',
+        kmsKeyRing: process.env.KMS_KEY_RING || 'nuvita-psi-keyring',
+        kmsKey: process.env.KMS_KEY || 'nuvita-psi-master-key',
         logLevel: (process.env.LOG_LEVEL as AppConfig['logLevel']) || 'info',
       };
 
@@ -308,20 +302,19 @@ export class AppConfigService {
       zapiInstanceId: process.env.ZAPI_INSTANCE_ID,
       zapiToken: process.env.ZAPI_TOKEN,
       zapiClientToken: process.env.ZAPI_CLIENT_TOKEN,
-      totpIssuer: process.env.TOTP_ISSUER || 'Nuvita',
+      totpIssuer: process.env.TOTP_ISSUER || 'Nuvita Psi',
       twilioAccountSid: process.env.TWILIO_ACCOUNT_SID,
       twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
       twilioFrom: process.env.TWILIO_FROM,
       appRootDomain: process.env.APP_ROOT_DOMAIN!,
       bootstrapSecret: process.env.BOOTSTRAP_SECRET!,
       prontuarioSignatureSecret: process.env.PRONTUARIO_SIGNATURE_SECRET!,
-      geminiApiKey: process.env.GEMINI_API_KEY,
       allowPublicRegistration: resolveAllowPublicRegistration(
         (process.env.NODE_ENV as AppConfig['nodeEnv']) || 'development',
       ),
-      gcpProjectId: process.env.GCP_PROJECT_ID || 'nuvita-499800',
-      kmsKeyRing: process.env.KMS_KEY_RING || 'nuvita-keyring',
-      kmsKey: process.env.KMS_KEY || 'nuvita-master-key',
+      gcpProjectId: process.env.GCP_PROJECT_ID || '',
+      kmsKeyRing: process.env.KMS_KEY_RING || 'nuvita-psi-keyring',
+      kmsKey: process.env.KMS_KEY || 'nuvita-psi-master-key',
       logLevel: (process.env.LOG_LEVEL as AppConfig['logLevel']) || 'debug',
     };
 

@@ -3,8 +3,12 @@ name: Deploy API to Cloud Run
 # Faz build da imagem (Dockerfile na raiz) e deploy da API no Google Cloud Run.
 #
 # Autenticação via Workload Identity Federation (OIDC) — sem chave de SA de longa
-# duração. Secrets (Settings > Secrets and variables > Actions):
-#   - GCP_PROJECT_ID       ID do projeto GCP (ex.: nuvita-499800).
+# duração. Secrets (Settings > Secrets and variables > Actions) — AINDA NÃO
+# CONFIGURADOS neste repo novo (ver infra/PRODUCTION-CHECKLIST.md):
+#   - GCP_PROJECT_ID       nuvita-499800 — MESMO projeto GCP do Nuvita original
+#                          (nuvita-psi roda como subdomínio psi.nuvita.app.br /
+#                          api-psi.nuvita.app.br, serviço Cloud Run próprio
+#                          "nuvita-psi-api" dentro do projeto compartilhado).
 #   - GCP_WIF_PROVIDER     Resource name do provider WIF
 #                          (projects/<num>/locations/global/workloadIdentityPools/<pool>/providers/<prov>).
 #   - GCP_SA_EMAIL         E-mail da service account de deploy.
@@ -32,7 +36,7 @@ permissions:
   id-token: write
 
 env:
-  SERVICE: nuvita-api
+  SERVICE: nuvita-psi-api
   REGION: southamerica-east1
 
 jobs:

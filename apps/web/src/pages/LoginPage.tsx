@@ -37,7 +37,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(values.email, values.password, values.totpCode || undefined);
-      toast.success('Bem-vindo ao Nuvita.');
+      toast.success('Bem-vindo ao Nuvita Psi.');
       navigate(from, { replace: true });
     } catch (err) {
       const msg = apiErrorMessage(err, 'Não foi possível entrar.');
@@ -85,7 +85,7 @@ export function LoginPage() {
         </div>
 
         <p className="relative text-blue-300/70 text-sm">
-          © {new Date().getFullYear()} Nuvita · Plataforma de saúde
+          © {new Date().getFullYear()} Nuvita Psi · Plataforma para psicólogos
         </p>
       </div>
 

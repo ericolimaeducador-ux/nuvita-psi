@@ -2,7 +2,7 @@ import { brand } from '@/lib/brand';
 import { Logo } from '@/components/Logo';
 
 /**
- * Timbre (cabeçalho) padrão da Nuvita para documentos impressos / gerados em PDF.
+ * Timbre (cabeçalho) padrão do Nuvita Psi para documentos impressos / gerados em PDF.
  * Logo oficial à esquerda e dados cadastrais à direita.
  */
 export function DocumentoTimbre() {
@@ -20,7 +20,7 @@ export function DocumentoTimbre() {
 }
 
 /**
- * Rodapé padrão para documentos impressos / PDF, com a identificação da Nuvita.
+ * Rodapé padrão para documentos impressos / PDF, com a identificação do Nuvita Psi.
  */
 export function DocumentoRodape() {
   return (
