@@ -52,7 +52,6 @@ export function ProntuarioImpressaoPage() {
     return <div className="p-8 space-y-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-96 w-full" /></div>;
   }
 
-  const isEnfermagem = pr?.tipo === TipoAtendimento.CONSULTA_ENFERMAGEM;
   const isPsicoterapia = pr?.tipo === TipoAtendimento.PSICOTERAPIA;
   const sv = pr?.objetivo?.sinaisVitais;
   const sinais = sv
@@ -77,7 +76,7 @@ export function ProntuarioImpressaoPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm text-muted-foreground">
-          Prévia do {isEnfermagem ? 'Registro de Enfermagem' : isPsicoterapia ? 'Registro de Atendimento Psicológico' : 'Prontuário (SOAP)'}
+          Prévia do {isPsicoterapia ? 'Registro de Atendimento Psicológico' : 'Prontuário (SOAP)'}
         </span>
         <Button size="sm" className="ml-auto" onClick={() => window.print()}>
           <Printer className="h-4 w-4 mr-2" /> Imprimir / Salvar PDF
@@ -92,7 +91,7 @@ export function ProntuarioImpressaoPage() {
         <div className="flex items-center justify-between border-b-2 border-gray-800 pb-4 mb-6">
           <div>
             <h1 className="text-base font-bold uppercase tracking-wide">
-              {isEnfermagem ? 'Registro de Enfermagem' : isPsicoterapia ? 'Registro de Atendimento Psicológico' : 'Prontuário — SOAP'}
+              {isPsicoterapia ? 'Registro de Atendimento Psicológico' : 'Prontuário — SOAP'}
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">{pr ? (TIPO_ATENDIMENTO_LABEL[pr.tipo] ?? pr.tipo) : '—'}</p>
           </div>
@@ -115,16 +114,7 @@ export function ProntuarioImpressaoPage() {
           </div>
         </section>
 
-        {isEnfermagem ? (
-          <section className="mb-5">
-            <h2 className="text-xs font-bold uppercase text-gray-500 mb-2 border-b border-gray-300 pb-1">Registro de Enfermagem</h2>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-1 mb-2">
-              <Campo label="Ligação ao paciente">{pr?.registroEnfermagem?.dataLigacao && formatData(pr.registroEnfermagem.dataLigacao)}</Campo>
-              <Campo label="Chegada da sonda">{pr?.registroEnfermagem?.sondaChegouEm && formatData(pr.registroEnfermagem.sondaChegouEm)}</Campo>
-            </div>
-            <p className="whitespace-pre-line">{pr?.registroEnfermagem?.observacoes || '—'}</p>
-          </section>
-        ) : isPsicoterapia ? (
+        {isPsicoterapia ? (
           <section className="mb-5">
             <h2 className="text-xs font-bold uppercase text-gray-500 mb-2 border-b border-gray-300 pb-1">Registro de Atendimento Psicológico</h2>
             <div className="space-y-1.5">

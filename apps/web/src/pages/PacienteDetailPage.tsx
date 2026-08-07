@@ -6,13 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import dayjs from 'dayjs';
 import {
-  ArrowLeft, User, Download, Plus, FileText, FileSignature, Scale,
-  Package, PackageCheck, ClipboardList, CalendarClock, ChevronDown, Stethoscope,
-  ListChecks, Trash2, UserCheck, Pencil,
+  ArrowLeft, User, Download, Plus, FileText,
+  CalendarClock, ChevronDown, Stethoscope,
+  ListChecks, Trash2, Pencil,
 } from 'lucide-react';
 import { ProntuarioDetailDialog, NovoAtendimentoDialog } from '@/components/ProntuarioDialogs';
 import { NovoDocumentoDialog } from '@/components/NovoDocumentoDialog';
-import { NovaAvaliacaoIUDialog, NovoLaudoDialog, ConfirmExcluirDialog } from '@/components/FluxoClinicoDialogs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,21 +27,16 @@ import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/auth/AuthContext';
 import {
   pacientesApi, prontuariosApi, agendaApi, documentosApi,
-  laudoMedicoApi, avaliacaoIUApi, entregasApi,
-  checklistDocumentosApi, followUpApi,
-  produtosApi, observacoesPacienteApi,
+  checklistDocumentosApi, observacoesPacienteApi,
 } from '@/api/resources';
 import { apiErrorMessage } from '@/api/client';
-import { formatCpf, formatData, idade, toItems, formatBRL, formatEndereco } from '@/utils';
+import { formatCpf, formatData, idade, toItems, formatEndereco } from '@/utils';
 import {
   Sexo, SEXO_LABEL, ProjetoPaciente, PROJETO_LABEL, STATUS_AGENDAMENTO_LABEL, TIPO_ATENDIMENTO_LABEL,
-  StatusEntrega, Modulo, Papel,
+  Modulo, Papel,
   StatusChecklistDocumento, STATUS_CHECKLIST_DOCUMENTO_LABEL, TIPO_DOCUMENTO_LABEL,
-  StatusElegibilidade, STATUS_ELEGIBILIDADE_LABEL,
-  StatusLaudoMedico, STATUS_LAUDO_MEDICO_LABEL,
   StatusAgendamento, TipoAtendimento, TIPO_ATENDIMENTO_POR_AGENDAMENTO,
   type Agendamento, type Prontuario, type Documento, type Paciente,
-  type LaudoMedico, type AvaliacaoIU, type Entrega, type FollowUp,
 } from '@/types';
 
 function DescItem({ label, value }: { label: string; value: string }) {
@@ -127,12 +121,6 @@ export function PacienteDetailPage() {
 
   const [novoDocOpen, setNovoDocOpen] = useState(false);
   const [docParaExcluir, setDocParaExcluir] = useState<Documento | null>(null);
-  const [novaAvaliacaoOpen, setNovaAvaliacaoOpen] = useState(false);
-  const [avaliacaoEdit, setAvaliacaoEdit] = useState<AvaliacaoIU | null>(null);
-  const [avaliacaoParaExcluir, setAvaliacaoParaExcluir] = useState<AvaliacaoIU | null>(null);
-  const [novoLaudoOpen, setNovoLaudoOpen] = useState(false);
-  const [laudoEmEdicao, setLaudoEmEdicao] = useState<LaudoMedico | null>(null);
-  const [laudoParaExcluir, setLaudoParaExcluir] = useState<LaudoMedico | null>(null);
 
   const pacQ = useQuery({ queryKey: ['paciente', id], queryFn: () => pacientesApi.get(id), enabled: !!id });
   const prontQ = useQuery({ queryKey: ['prontuarios', 'paciente', id], queryFn: () => prontuariosApi.list({ pacienteId: id }), enabled: !!id });
@@ -147,37 +135,6 @@ export function PacienteDetailPage() {
     },
     onError: (e) => toast.error('Erro ao excluir', apiErrorMessage(e)),
   });
-  const laudosQ = useQuery({ queryKey: ['laudos', 'paciente', id], queryFn: () => laudoMedicoApi.listByPaciente(id), enabled: !!id });
-  const excluirLaudoMut = useMutation({
-    mutationFn: (laudoId: string) => laudoMedicoApi.excluir(laudoId),
-    onSuccess: () => {
-      toast.success('Relatório excluído.');
-      setLaudoParaExcluir(null);
-      void qc.invalidateQueries({ queryKey: ['laudos', 'paciente', id] });
-    },
-    onError: (e) => toast.error('Erro ao excluir', apiErrorMessage(e)),
-  });
-  const avaliacoesQ = useQuery({ queryKey: ['avaliacoes-iu', 'paciente', id], queryFn: () => avaliacaoIUApi.listByPaciente(id), enabled: !!id });
-  const excluirAvaliacaoMut = useMutation({
-    mutationFn: (avId: string) => avaliacaoIUApi.excluir(avId),
-    onSuccess: () => {
-      toast.success('Avaliação excluída.');
-      setAvaliacaoParaExcluir(null);
-      void qc.invalidateQueries({ queryKey: ['avaliacoes-iu', 'paciente', id] });
-    },
-    onError: (e) => toast.error('Erro ao excluir', apiErrorMessage(e)),
-  });
-  const entregasQ = useQuery({ queryKey: ['entregas', 'paciente', id], queryFn: () => entregasApi.listByPaciente(id), enabled: !!id });
-  const produtosQ = useQuery({ queryKey: ['produtos'], queryFn: () => produtosApi.list() });
-
-  const produtos = (produtosQ.data ?? []).filter((p) => p.projeto === pacQ.data?.projeto);
-  const avaliacoes = (avaliacoesQ.data as AvaliacaoIU[]) ?? [];
-  // Laudo se apoia na última avaliação (produto indicado + vínculo), como no fluxo clínico.
-  const ultimaAvaliacao = avaliacoes[0];
-
-  // Papéis que podem criar cada registro (mesma regra do fluxo clínico, sem depender da etapa).
-  const podeNovaAvaliacao = user?.papel === Papel.ENFERMEIRO || user?.papel === Papel.MEDICO || user?.papel === Papel.ADMIN;
-  const podeNovoLaudo = user?.papel === Papel.ENFERMEIRO || user?.papel === Papel.MEDICO || user?.papel === Papel.ADMIN;
   // Export LGPD: mesmos papéis autorizados no backend (GET /pacientes/:id/export).
   const podeExportar =
     user?.papel === Papel.SECRETARIA || user?.papel === Papel.MEDICO || user?.papel === Papel.ADMIN;
@@ -204,9 +161,6 @@ export function PacienteDetailPage() {
   });
 
   const prontuarios = useMemo(() => toItems<Prontuario>(prontQ.data as never), [prontQ.data]);
-  const entregas = entregasQ.data ?? [];
-  const insumosRecebidos = entregas.filter((e) => e.status === StatusEntrega.ENTREGUE);
-  const insumosAReceber = entregas.filter((e) => e.status !== StatusEntrega.ENTREGUE);
 
   if (pacQ.isLoading) return (
     <div className="p-6 space-y-4">
@@ -312,10 +266,7 @@ export function PacienteDetailPage() {
                   <TableCell>{pr.dataAtendimento ? dayjs(pr.dataAtendimento).format('DD/MM/YYYY HH:mm') : '—'}</TableCell>
                   <TableCell>{TIPO_ATENDIMENTO_LABEL[pr.tipo] ?? pr.tipo}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant={pr.assinado ? 'success' : 'warning'}>{pr.assinado ? 'Assinado' : 'Rascunho'}</Badge>
-                      {pr.relatorioJudicial && <Badge variant="secondary" className="gap-1"><Scale className="h-3 w-3" />NAT-JUS</Badge>}
-                    </div>
+                    <Badge variant={pr.assinado ? 'success' : 'warning'}>{pr.assinado ? 'Assinado' : 'Rascunho'}</Badge>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {pr.avaliacao?.diagnosticoDefinitivo || pr.avaliacao?.cid10?.join(', ') || pr.avaliacao?.hipotesesDiagnosticas?.[0] || '—'}
@@ -330,62 +281,6 @@ export function PacienteDetailPage() {
 
       {/* Observações gerais — campo livre p/ qualquer profissional de atendimento (fora do escopo do psicólogo) */}
       {!ehPsicologo && <ObservacoesSecao pacienteId={id} observacoesAtuais={p.observacoes} />}
-
-      {/* Avaliações de incontinência urinária — fluxo da Mais Quali Vida, fora do escopo do psicólogo */}
-      {!ehPsicologo && (
-        <Secao
-          icon={<ClipboardList className="h-4 w-4" />}
-          titulo="Avaliações de incontinência urinária"
-          contagem={avaliacoesQ.data?.length}
-          defaultOpen={false}
-          acao={
-            podeNovaAvaliacao ? (
-              <Button size="sm" variant="outline" onClick={() => { setAvaliacaoEdit(null); setNovaAvaliacaoOpen(true); }}>
-                <Plus className="mr-2 h-4 w-4" /> Nova avaliação
-              </Button>
-            ) : undefined
-          }
-        >
-          {avaliacoesQ.isLoading ? (
-            <Skeleton className="h-20 w-full" />
-          ) : (avaliacoesQ.data ?? []).length === 0 ? (
-            <Vazio>Nenhuma avaliação de IU registrada.</Vazio>
-          ) : (
-            <Table>
-              <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Motivo</TableHead><TableHead>Cateter indicado</TableHead><TableHead className="w-40" /></TableRow></TableHeader>
-              <TableBody>
-                {(avaliacoesQ.data as AvaliacaoIU[]).map((a) => (
-                  <TableRow key={a.id}>
-                    <TableCell>{formatData(a.dataAtendimento)}</TableCell>
-                    <TableCell className="text-muted-foreground truncate max-w-xs">{a.motivoIU || '—'}</TableCell>
-                    <TableCell className="text-muted-foreground">{a.produtoIndicado ? `${a.produtoIndicado.sexo} ${a.produtoIndicado.french}Fr` : '—'}</TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      {podeNovaAvaliacao && (
-                        <Button variant="ghost" size="sm" onClick={() => { setAvaliacaoEdit(a); setNovaAvaliacaoOpen(true); }}>Editar</Button>
-                      )}
-                      <Button variant="ghost" size="sm" onClick={() => navigate(`/fluxo-clinico/${id}/avaliacao/${a.id}/imprimir`)}>Imprimir</Button>
-                      {podeNovaAvaliacao && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          title="Excluir avaliação"
-                          onClick={() => setAvaliacaoParaExcluir(a)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Secao>
-      )}
-
-      {/* Follow-up de elegibilidade (ligações do enfermeiro) */}
-      {!ehPsicologo && permissoes.includes(Modulo.FLUXO_CLINICO) && <FollowUpSecao pacienteId={id} />}
 
       {/* Checklist de documentos (secretaria/admin) */}
       {!ehPsicologo && permissoes.includes(Modulo.DOCUMENTOS) && <ChecklistDocumentosSecao pacienteId={id} />}
@@ -439,63 +334,6 @@ export function PacienteDetailPage() {
         )}
       </Secao>
 
-      {/* Laudos / relatórios médicos — fora do escopo do psicólogo */}
-      {!ehPsicologo && (
-        <Secao
-          icon={<FileSignature className="h-4 w-4" />}
-          titulo="Laudos e relatórios médicos"
-          contagem={laudosQ.data?.length}
-          defaultOpen={false}
-          acao={
-            podeNovoLaudo ? (
-              <Button size="sm" variant="outline" onClick={() => { setLaudoEmEdicao(null); setNovoLaudoOpen(true); }}>
-                <Plus className="mr-2 h-4 w-4" /> Novo Relatório Médico Judiciário
-              </Button>
-            ) : undefined
-          }
-        >
-          {laudosQ.isLoading ? (
-            <Skeleton className="h-20 w-full" />
-          ) : (laudosQ.data ?? []).length === 0 ? (
-            <Vazio>Nenhum relatório médico judiciário emitido.</Vazio>
-          ) : (
-            <Table>
-              <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>CID-10</TableHead><TableHead>Situação</TableHead><TableHead className="w-40" /></TableRow></TableHeader>
-              <TableBody>
-                {(laudosQ.data as LaudoMedico[]).map((l) => (
-                  <TableRow key={l.id}>
-                    <TableCell>{formatData(l.dataLaudo)}</TableCell>
-                    <TableCell className="text-muted-foreground">{l.cid10?.join(', ') || '—'}</TableCell>
-                    <TableCell>
-                      <Badge variant={l.status === StatusLaudoMedico.ASSINADO ? 'success' : l.status === StatusLaudoMedico.AGUARDANDO_REVISAO ? 'secondary' : 'warning'}>
-                        {STATUS_LAUDO_MEDICO_LABEL[l.status]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="space-x-1">
-                      {podeNovoLaudo && l.status !== StatusLaudoMedico.ASSINADO && (
-                        <Button variant="ghost" size="sm" onClick={() => { setLaudoEmEdicao(l); setNovoLaudoOpen(true); }}>Revisar</Button>
-                      )}
-                      <Button variant="ghost" size="sm" onClick={() => navigate(`/fluxo-clinico/${id}/laudo/${l.id}/imprimir`)}>Imprimir</Button>
-                      {podeNovoLaudo && l.status !== StatusLaudoMedico.ASSINADO && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          title="Excluir relatório"
-                          onClick={() => setLaudoParaExcluir(l)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Secao>
-      )}
-
       {/* Histórico de agenda — fora do escopo do psicólogo (agenda dele fica em Atendimento Psicológico) */}
       {!ehPsicologo && (
         <Secao icon={<CalendarClock className="h-4 w-4" />} titulo="Histórico de agenda" contagem={toItems<Agendamento>(agendaQ.data as never).length} defaultOpen={false}>
@@ -529,23 +367,6 @@ export function PacienteDetailPage() {
             </Table>
           )}
         </Secao>
-      )}
-
-      {/* Insumos — programa de cateterismo, fora do escopo do psicólogo */}
-      {!ehPsicologo && (
-        <>
-          <Secao icon={<PackageCheck className="h-4 w-4" />} titulo="Insumos recebidos" contagem={insumosRecebidos.length} defaultOpen={false}>
-            {entregasQ.isLoading ? <Skeleton className="h-20 w-full" /> : insumosRecebidos.length === 0 ? (
-              <Vazio>Nenhum insumo entregue ainda.</Vazio>
-            ) : <TabelaEntregas entregas={insumosRecebidos} />}
-          </Secao>
-
-          <Secao icon={<Package className="h-4 w-4" />} titulo="Insumos a receber" contagem={insumosAReceber.length} defaultOpen={false}>
-            {entregasQ.isLoading ? <Skeleton className="h-20 w-full" /> : insumosAReceber.length === 0 ? (
-              <Vazio>Nenhum insumo pendente.</Vazio>
-            ) : <TabelaEntregas entregas={insumosAReceber} />}
-          </Secao>
-        </>
       )}
 
       <ProntuarioDetailDialog
@@ -592,64 +413,7 @@ export function PacienteDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <ConfirmExcluirDialog
-        open={!!avaliacaoParaExcluir}
-        titulo="Excluir avaliação de incontinência urinária"
-        descricao={<>Tem certeza que deseja excluir a avaliação de <span className="font-medium text-foreground">{formatData(avaliacaoParaExcluir?.dataAtendimento)}</span>? Esta ação não pode ser desfeita pela tela.</>}
-        pending={excluirAvaliacaoMut.isPending}
-        onCancel={() => setAvaliacaoParaExcluir(null)}
-        onConfirm={() => avaliacaoParaExcluir && excluirAvaliacaoMut.mutate(avaliacaoParaExcluir.id)}
-      />
-      <ConfirmExcluirDialog
-        open={!!laudoParaExcluir}
-        titulo="Excluir Relatório Médico Judiciário"
-        descricao={<>Tem certeza que deseja excluir o relatório de <span className="font-medium text-foreground">{formatData(laudoParaExcluir?.dataLaudo)}</span>? Esta ação não pode ser desfeita pela tela.</>}
-        pending={excluirLaudoMut.isPending}
-        onCancel={() => setLaudoParaExcluir(null)}
-        onConfirm={() => laudoParaExcluir && excluirLaudoMut.mutate(laudoParaExcluir.id)}
-      />
-      <NovaAvaliacaoIUDialog
-        open={novaAvaliacaoOpen}
-        onOpenChange={(o) => { setNovaAvaliacaoOpen(o); if (!o) setAvaliacaoEdit(null); }}
-        pacienteId={id}
-        clinicaId={user?.clinicaId}
-        produtos={produtos}
-        avaliacao={avaliacaoEdit ?? undefined}
-        enfermeiroRegistro={user?.registroProfissional}
-        onCreated={() => void qc.invalidateQueries({ queryKey: ['avaliacoes-iu', 'paciente', id] })}
-      />
-      <NovoLaudoDialog
-        open={novoLaudoOpen}
-        onOpenChange={(o) => { setNovoLaudoOpen(o); if (!o) setLaudoEmEdicao(null); }}
-        pacienteId={id}
-        clinicaId={user?.clinicaId}
-        produtos={produtos}
-        avaliacaoId={ultimaAvaliacao?.id}
-        produtoIndicado={ultimaAvaliacao?.produtoIndicado}
-        laudo={laudoEmEdicao ?? undefined}
-        onCreated={() => void qc.invalidateQueries({ queryKey: ['laudos', 'paciente', id] })}
-      />
     </div>
-  );
-}
-
-function TabelaEntregas({ entregas }: { entregas: Entrega[] }) {
-  return (
-    <Table>
-      <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Itens</TableHead><TableHead>Valor</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-      <TableBody>
-        {entregas.map((e) => (
-          <TableRow key={e.id}>
-            <TableCell>{formatData(e.dataEntrega)}</TableCell>
-            <TableCell className="text-muted-foreground">
-              {(e.itens ?? []).map((i) => `${i.quantidade}× ${i.descricao}`).join(', ') || '—'}
-            </TableCell>
-            <TableCell>{formatBRL((e.valorTotalCentavos ?? 0) / 100)}</TableCell>
-            <TableCell><Badge variant={e.status === StatusEntrega.ENTREGUE ? 'success' : 'warning'}>{e.status}</Badge></TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
   );
 }
 
@@ -1084,88 +848,6 @@ function ObservacoesSecao({ pacienteId, observacoesAtuais }: { pacienteId: strin
           </div>
         )}
       </div>
-    </Secao>
-  );
-}
-
-/** Somente leitura — o registro em si é feito em /fluxo-clinico/:id (Passo 2),
- * onde o enfermeiro já tem o fluxo completo de elegibilidade. */
-function FollowUpSecao({ pacienteId }: { pacienteId: string }) {
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-  const { user } = useAuth();
-  const podeExcluir = user?.papel === Papel.ENFERMEIRO || user?.papel === Papel.MEDICO || user?.papel === Papel.ADMIN;
-  const [followupParaExcluir, setFollowupParaExcluir] = useState<FollowUp | null>(null);
-  const listQ = useQuery({
-    queryKey: ['followup', 'paciente', pacienteId],
-    queryFn: () => followUpApi.listByPaciente(pacienteId),
-  });
-  const excluirMut = useMutation({
-    mutationFn: (followupId: string) => followUpApi.excluir(followupId),
-    onSuccess: () => {
-      toast.success('Follow-up excluído.');
-      setFollowupParaExcluir(null);
-      void qc.invalidateQueries({ queryKey: ['followup', 'paciente', pacienteId] });
-    },
-    onError: (e) => toast.error('Erro ao excluir', apiErrorMessage(e)),
-  });
-  const followups = listQ.data ?? [];
-
-  return (
-    <Secao
-      icon={<UserCheck className="h-4 w-4" />}
-      titulo="Follow-up"
-      contagem={followups.length}
-      defaultOpen={false}
-      acao={
-        <Button size="sm" variant="outline" onClick={() => navigate(`/fluxo-clinico/${pacienteId}`)}>
-          Ver no fluxo clínico
-        </Button>
-      }
-    >
-      {listQ.isLoading ? (
-        <Skeleton className="h-16 w-full" />
-      ) : followups.length === 0 ? (
-        <Vazio>Nenhum follow-up registrado ainda.</Vazio>
-      ) : (
-        <Table>
-          <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Elegibilidade</TableHead><TableHead>Observações</TableHead><TableHead className="w-10" /></TableRow></TableHeader>
-          <TableBody>
-            {followups.map((f) => (
-              <TableRow key={f.id}>
-                <TableCell>{formatData(f.dataFollowup)}</TableCell>
-                <TableCell>
-                  <Badge variant={f.statusElegibilidade === StatusElegibilidade.ELEGIVEL ? 'success' : f.statusElegibilidade === StatusElegibilidade.NAO_ELEGIVEL ? 'destructive' : 'warning'}>
-                    {STATUS_ELEGIBILIDADE_LABEL[f.statusElegibilidade]}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground truncate max-w-xs">{f.observacoes || '—'}</TableCell>
-                <TableCell>
-                  {podeExcluir && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      title="Excluir follow-up"
-                      onClick={() => setFollowupParaExcluir(f)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-      <ConfirmExcluirDialog
-        open={!!followupParaExcluir}
-        titulo="Excluir follow-up"
-        descricao={<>Tem certeza que deseja excluir o follow-up de <span className="font-medium text-foreground">{formatData(followupParaExcluir?.dataFollowup)}</span>? Esta ação não pode ser desfeita pela tela.</>}
-        pending={excluirMut.isPending}
-        onCancel={() => setFollowupParaExcluir(null)}
-        onConfirm={() => followupParaExcluir && excluirMut.mutate(followupParaExcluir.id)}
-      />
     </Secao>
   );
 }

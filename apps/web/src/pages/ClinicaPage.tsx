@@ -16,7 +16,7 @@ import { useAuth } from '@/auth/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { Papel, PAPEL_LABEL } from '@/types';
 
-const PAPEIS_CRIAVEIS = [Papel.MEDICO, Papel.ENFERMEIRO, Papel.SECRETARIA];
+const PAPEIS_CRIAVEIS = [Papel.MEDICO, Papel.SECRETARIA];
 
 const usuarioSchema = z.object({
   nome: z.string().min(1, 'Informe o nome.'),

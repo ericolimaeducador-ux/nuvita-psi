@@ -1,14 +1,9 @@
 import { api } from './client';
 import type {
   Agendamento,
-  AvaliacaoIU,
   ChecklistDocumentoItem,
   DashboardFinanceiro,
   Documento,
-  Entrega,
-  EtapaFluxoClinico,
-  FollowUp,
-  LaudoMedico,
   Lancamento,
   ListUsuariosResult,
   LoginResponse,
@@ -21,9 +16,7 @@ import type {
   PageResult,
   Papel,
   PresignUploadResponse,
-  Produto,
   Prontuario,
-  RascunhoLaudoIA,
   SalaAcessoInfo,
   SalaEvento,
   SalaTelemedicina,
@@ -73,10 +66,8 @@ export interface ListPacientesParams {
   limit?: number;
   incluirInativos?: boolean;
   clinicaId?: string;
-  programaIU?: boolean;
   projeto?: ProjetoPaciente;
   representante?: string;
-  etapaFluxo?: EtapaFluxoClinico;
 }
 export const pacientesApi = {
   list: (params: ListPacientesParams = {}) =>
@@ -94,8 +85,6 @@ export const pacientesApi = {
     api.get(`/pacientes/${id}/export`).then((r) => r.data),
   updateObservacoes: (id: string, observacoes: string) =>
     api.patch<Paciente>(`/pacientes/${id}/observacoes`, { observacoes }).then((r) => r.data),
-  avancarEtapaFluxo: (id: string) =>
-    api.patch<Paciente>(`/pacientes/${id}/fluxo/avancar`).then((r) => r.data),
 };
 
 // ---------- Agenda ----------
@@ -303,68 +292,6 @@ export const teleAcessoApi = {
   },
 };
 
-// ---------- Produtos ----------
-export const produtosApi = {
-  list: (tipo?: string) =>
-    api.get<Produto[]>('/produtos', { params: tipo ? { tipo } : {} }).then((r) => r.data),
-  get: (codigo: number) =>
-    api.get<Produto>(`/produtos/${codigo}`).then((r) => r.data),
-};
-
-// ---------- Avaliação IU ----------
-export const avaliacaoIUApi = {
-  create: (payload: Record<string, unknown>) =>
-    api.post<AvaliacaoIU>('/avaliacao-iu', payload).then((r) => r.data),
-  update: (id: string, payload: Record<string, unknown>) =>
-    api.patch<AvaliacaoIU>(`/avaliacao-iu/${id}`, payload).then((r) => r.data),
-  listByPaciente: (pacienteId: string) =>
-    api.get<AvaliacaoIU[]>('/avaliacao-iu', { params: { pacienteId } }).then((r) => r.data),
-  get: (id: string) =>
-    api.get<AvaliacaoIU>(`/avaliacao-iu/${id}`).then((r) => r.data),
-  minhas: () =>
-    api.get<AvaliacaoIU[]>('/avaliacao-iu/minhas').then((r) => r.data),
-  count: () =>
-    api.get<{ total: number }>('/avaliacao-iu/count').then((r) => r.data),
-  excluir: (id: string) =>
-    api.patch(`/avaliacao-iu/${id}/excluir`).then((r) => r.data),
-};
-
-// ---------- Follow-up ----------
-export const followUpApi = {
-  create: (payload: Record<string, unknown>) =>
-    api.post<FollowUp>('/followup', payload).then((r) => r.data),
-  listByPaciente: (pacienteId: string) =>
-    api.get<FollowUp[]>('/followup', { params: { pacienteId } }).then((r) => r.data),
-  listByAvaliacao: (avaliacaoIuId: string) =>
-    api.get<FollowUp[]>(`/followup/avaliacao/${avaliacaoIuId}`).then((r) => r.data),
-  resumo: () =>
-    api.get<{ emAvaliacao: number; elegivel: number; naoElegivel: number }>('/followup/resumo').then((r) => r.data),
-  excluir: (id: string) =>
-    api.patch(`/followup/${id}/excluir`).then((r) => r.data),
-};
-
-// ---------- Laudo Médico ----------
-export const laudoMedicoApi = {
-  create: (payload: Record<string, unknown>) =>
-    api.post<LaudoMedico>('/laudo-medico', payload).then((r) => r.data),
-  update: (id: string, payload: Record<string, unknown>) =>
-    api.patch<LaudoMedico>(`/laudo-medico/${id}`, payload).then((r) => r.data),
-  listByPaciente: (pacienteId: string) =>
-    api.get<LaudoMedico[]>('/laudo-medico', { params: { pacienteId } }).then((r) => r.data),
-  pendentesRevisao: () =>
-    api.get<LaudoMedico[]>('/laudo-medico/pendentes-revisao').then((r) => r.data),
-  get: (id: string) =>
-    api.get<LaudoMedico>(`/laudo-medico/${id}`).then((r) => r.data),
-  encaminhar: (id: string) =>
-    api.post<LaudoMedico>(`/laudo-medico/${id}/encaminhar`, {}).then((r) => r.data),
-  excluir: (id: string) =>
-    api.patch(`/laudo-medico/${id}/excluir`).then((r) => r.data),
-  assinar: (id: string, crm?: string) =>
-    api.post(`/laudo-medico/${id}/assinar`, {}, { params: crm ? { crm } : {} }).then((r) => r.data),
-  preencherComIA: (pacienteId: string, avaliacaoIuId: string) =>
-    api.post<RascunhoLaudoIA>('/laudo-medico/pre-preenchimento', { pacienteId, avaliacaoIuId }).then((r) => r.data),
-};
-
 // ---------- Observações do paciente (timeline append-only) ----------
 export const observacoesPacienteApi = {
   create: (payload: { pacienteId: string; texto: string }) =>
@@ -387,18 +314,6 @@ export const checklistDocumentosApi = {
     api.post<ChecklistDocumentoItem[]>('/checklist-documentos/padrao', { pacienteId }).then((r) => r.data),
   resumoPendentes: () =>
     api.get<{ pendentes: number }>('/checklist-documentos/resumo-pendentes').then((r) => r.data),
-};
-
-// ---------- Entregas ----------
-export const entregasApi = {
-  create: (payload: Record<string, unknown>) =>
-    api.post<Entrega>('/entregas', payload).then((r) => r.data),
-  listByPaciente: (pacienteId: string) =>
-    api.get<Entrega[]>('/entregas', { params: { pacienteId } }).then((r) => r.data),
-  get: (id: string) =>
-    api.get<Entrega>(`/entregas/${id}`).then((r) => r.data),
-  confirmar: (id: string) =>
-    api.post(`/entregas/${id}/confirmar`).then((r) => r.data),
 };
 
 // ---------- Super Admin ----------
@@ -484,33 +399,9 @@ export interface DashboardPacientes {
   porSexo: Array<{ _id: string | null; total: number }>;
 }
 
-export interface EntregaNoPeriodo {
-  pacienteId: string;
-  pacienteNome: string;
-  dataEntrega: string;
-  status: string;
-  itens: Array<{ codigo: number; descricao: string; quantidade: number; categoria?: string }>;
-}
-
-export interface PacienteAguardandoRelatorio {
-  pacienteId: string;
-  pacienteNome: string;
-  criadoEm: string;
-}
-
 export const analyticsApi = {
   pacientes: (params: AnalyticsPeriodParams = {}) =>
     api.get<DashboardPacientes>('/analytics/pacientes', { params }).then((r) => r.data),
-  pacientesPorCateter: (params: AnalyticsPeriodParams = {}) =>
-    api.get<Array<{ _id: number; total: number }>>('/analytics/pacientes-por-cateter', { params }).then((r) => r.data),
   pacientesPorRepresentante: (params: AnalyticsPeriodParams = {}) =>
     api.get<Array<{ _id: string; total: number }>>('/analytics/pacientes-por-representante', { params }).then((r) => r.data),
-  entregasNoMes: (params: AnalyticsPeriodParams = {}) =>
-    api.get<EntregaNoPeriodo[]>('/analytics/entregas-no-mes', { params }).then((r) => r.data),
-  sondasNoMes: (params: AnalyticsPeriodParams = {}) =>
-    api.get<{ totalQuantidade: number }>('/analytics/sondas-no-mes', { params }).then((r) => r.data),
-  aguardandoRelatorio: (params: AnalyticsPeriodParams = {}) =>
-    api.get<PacienteAguardandoRelatorio[]>('/analytics/aguardando-relatorio', { params }).then((r) => r.data),
-  pacientesPorEtapa: (params: AnalyticsPeriodParams = {}) =>
-    api.get<Array<{ etapa: EtapaFluxoClinico; total: number }>>('/analytics/pacientes-por-etapa', { params }).then((r) => r.data),
 };
