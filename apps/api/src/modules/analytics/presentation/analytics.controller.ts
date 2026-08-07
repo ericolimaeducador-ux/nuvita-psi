@@ -42,42 +42,10 @@ export class AnalyticsController {
     return this.analyticsService.notificacoes(clinicaId, dataInicio, dataFim);
   }
 
-  @Get('pacientes-por-cateter')
-  pacientesPorCateter(@Query() query: AnalyticsQueryDto, @CurrentUser() user: AuthTokenPayload) {
-    const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
-    return this.analyticsService.pacientesPorCateter(clinicaId);
-  }
-
   @Get('pacientes-por-representante')
   pacientesPorRepresentante(@Query() query: AnalyticsQueryDto, @CurrentUser() user: AuthTokenPayload) {
     const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
     return this.analyticsService.pacientesPorRepresentante(clinicaId);
-  }
-
-  @Get('entregas-no-mes')
-  entregasNoMes(@Query() query: AnalyticsQueryDto, @CurrentUser() user: AuthTokenPayload) {
-    const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
-    const { dataInicio, dataFim } = this.period(query);
-    return this.analyticsService.entregasNoPeriodo(clinicaId, dataInicio, dataFim);
-  }
-
-  @Get('sondas-no-mes')
-  sondasNoMes(@Query() query: AnalyticsQueryDto, @CurrentUser() user: AuthTokenPayload) {
-    const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
-    const { dataInicio, dataFim } = this.period(query);
-    return this.analyticsService.sondasNoPeriodo(clinicaId, dataInicio, dataFim);
-  }
-
-  @Get('aguardando-relatorio')
-  aguardandoRelatorio(@Query() query: AnalyticsQueryDto, @CurrentUser() user: AuthTokenPayload) {
-    const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
-    return this.analyticsService.pacientesAguardandoRelatorio(clinicaId);
-  }
-
-  @Get('pacientes-por-etapa')
-  pacientesPorEtapa(@Query() query: AnalyticsQueryDto, @CurrentUser() user: AuthTokenPayload) {
-    const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
-    return this.analyticsService.pacientesPorEtapaFluxo(clinicaId);
   }
 
   private period(query: AnalyticsQueryDto) {

@@ -2,7 +2,6 @@ export enum Papel {
   SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
   MEDICO = 'MEDICO',
-  ENFERMEIRO = 'ENFERMEIRO',
   PSICOLOGO = 'PSICOLOGO',
   SECRETARIA = 'SECRETARIA',
   PACIENTE = 'PACIENTE',
@@ -14,7 +13,6 @@ export enum Papel {
  */
 export const PAPEIS_PROFISSIONAIS = [
   Papel.MEDICO,
-  Papel.ENFERMEIRO,
   Papel.PSICOLOGO,
 ] as const;
 
@@ -22,7 +20,6 @@ export const PAPEIS_COM_2FA_OBRIGATORIO = [
   Papel.SUPER_ADMIN,
   Papel.ADMIN,
   Papel.MEDICO,
-  Papel.ENFERMEIRO,
   Papel.PSICOLOGO,
 ] as const;
 

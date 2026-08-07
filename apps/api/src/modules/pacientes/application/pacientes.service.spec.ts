@@ -2,7 +2,6 @@ import { Papel } from '../../../../../../packages/shared/src/auth';
 import { AuditLogRepository } from '../../auth/application/ports/audit-log.repository';
 import { PacienteRepository } from './ports/paciente.repository';
 import { PacientesService, RequestAuditContext } from './pacientes.service';
-import { EtapaFluxoClinico } from '../../../../../../packages/shared/src/fluxo-clinico';
 import { Paciente } from '../domain/paciente.entity';
 
 const context: RequestAuditContext = {
@@ -22,8 +21,6 @@ const basePaciente: Paciente = {
   id: 'paciente-1',
   clinicaId: 'clinica-1',
   nome: 'Maria',
-  etapaFluxo: EtapaFluxoClinico.AGUARDANDO_ATENDIMENTO,
-  etapaFluxoDesde: new Date('2026-01-01T00:00:00.000Z'),
   ativo: true,
   criadoEm: new Date('2026-01-01T00:00:00.000Z'),
   atualizadoEm: new Date('2026-01-01T00:00:00.000Z'),

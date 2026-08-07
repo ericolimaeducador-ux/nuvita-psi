@@ -1,5 +1,3 @@
-import { EtapaFluxoClinico } from '../../../../../../packages/shared/src/fluxo-clinico';
-
 export enum Sexo {
   FEMININO = 'FEMININO',
   MASCULINO = 'MASCULINO',
@@ -7,15 +5,10 @@ export enum Sexo {
   NAO_INFORMADO = 'NAO_INFORMADO',
 }
 
-// Classificação interna de projeto (tipo de cateter). Os nomes dos
-// fabricantes são propriedade intelectual e NUNCA aparecem no sistema —
-// só os rótulos neutros Alpha/Beta. O mapeamento fica fora do software.
+// Classificação interna do paciente. Hoje só existe o Projeto PSI
+// (atendimento psicológico) — visibilidade restrita ao papel PSICOLOGO (ver
+// PacientesService.list/findOne).
 export enum ProjetoPaciente {
-  ALPHA = 'ALPHA',
-  BETA = 'BETA',
-  // Pacientes de atendimento psicológico — visibilidade restrita ao papel
-  // PSICOLOGO (ver PacientesService.list/findOne). Não faz parte do
-  // programa de cateterismo/incontinência urinária.
   PSI = 'PSI',
 }
 
@@ -53,13 +46,10 @@ export interface Paciente {
   endereco?: Endereco;
   convenio?: Convenio;
   consentimentoLGPD?: ConsentimentoLGPD;
-  programaIU?: boolean;
   projeto?: ProjetoPaciente;
   /** Quem indicou/encaminhou o paciente. Texto livre, não criptografado — precisa ser filtrável/agregável. */
   representante?: string;
   observacoes?: string;
-  etapaFluxo: EtapaFluxoClinico;
-  etapaFluxoDesde: Date;
   ativo: boolean;
   criadoEm: Date;
   atualizadoEm: Date;

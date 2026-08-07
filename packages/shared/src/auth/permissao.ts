@@ -15,11 +15,7 @@ export enum Modulo {
   FINANCEIRO = 'FINANCEIRO',
   NOTIFICACOES = 'NOTIFICACOES',
   TELEMEDICINA = 'TELEMEDICINA',
-  LAUDOS = 'LAUDOS',
-  ENTREGAS = 'ENTREGAS',
-  AVALIACOES = 'AVALIACOES',
   ANALYTICS = 'ANALYTICS',
-  FLUXO_CLINICO = 'FLUXO_CLINICO',
   ATENDIMENTO_PSICOLOGICO = 'ATENDIMENTO_PSICOLOGICO',
   FINANCEIRO_PSICOLOGIA = 'FINANCEIRO_PSICOLOGIA',
   CLINICA = 'CLINICA',
@@ -37,11 +33,7 @@ export const MODULO_LABEL: Record<Modulo, string> = {
   [Modulo.FINANCEIRO]: 'Financeiro',
   [Modulo.NOTIFICACOES]: 'Notificações',
   [Modulo.TELEMEDICINA]: 'Telemedicina',
-  [Modulo.LAUDOS]: 'Laudos e relatórios',
-  [Modulo.ENTREGAS]: 'Insumos / entregas',
-  [Modulo.AVALIACOES]: 'Avaliações de IU',
   [Modulo.ANALYTICS]: 'Relatórios / analytics',
-  [Modulo.FLUXO_CLINICO]: 'Fluxo clínico',
   [Modulo.ATENDIMENTO_PSICOLOGICO]: 'Atendimento psicológico',
   [Modulo.FINANCEIRO_PSICOLOGIA]: 'Financeiro da psicologia',
   [Modulo.CLINICA]: 'Configuração da clínica',
@@ -55,16 +47,11 @@ export const PERMISSOES_PADRAO_POR_PAPEL: Record<Papel, Modulo[]> = {
   [Papel.SUPER_ADMIN]: TODOS_MODULOS,
   [Papel.ADMIN]: [
     M.DASHBOARD, M.PACIENTES, M.AGENDA, M.PRONTUARIOS, M.DOCUMENTOS, M.FINANCEIRO,
-    M.NOTIFICACOES, M.TELEMEDICINA, M.LAUDOS, M.ENTREGAS, M.AVALIACOES,
-    M.ANALYTICS, M.FLUXO_CLINICO, M.CLINICA,
+    M.NOTIFICACOES, M.TELEMEDICINA, M.ANALYTICS, M.CLINICA,
   ],
   [Papel.MEDICO]: [
     M.DASHBOARD, M.PACIENTES, M.AGENDA, M.PRONTUARIOS, M.DOCUMENTOS, M.TELEMEDICINA,
-    M.LAUDOS, M.AVALIACOES, M.ENTREGAS, M.FLUXO_CLINICO, M.ANALYTICS,
-  ],
-  [Papel.ENFERMEIRO]: [
-    M.DASHBOARD, M.PACIENTES, M.AGENDA, M.PRONTUARIOS, M.DOCUMENTOS, M.AVALIACOES,
-    M.LAUDOS, M.ENTREGAS, M.FLUXO_CLINICO, M.ANALYTICS,
+    M.ANALYTICS,
   ],
   // Atendimento psicológico é um extra do sistema: só o psicólogo enxerga o
   // módulo por padrão; para outros usuários (ex.: admin da clínica demo) a
@@ -76,7 +63,7 @@ export const PERMISSOES_PADRAO_POR_PAPEL: Record<Papel, Modulo[]> = {
     M.ATENDIMENTO_PSICOLOGICO, M.FINANCEIRO_PSICOLOGIA, M.ANALYTICS,
   ],
   [Papel.SECRETARIA]: [
-    M.DASHBOARD, M.PACIENTES, M.AGENDA, M.DOCUMENTOS, M.FINANCEIRO, M.NOTIFICACOES, M.FLUXO_CLINICO, M.ANALYTICS,
+    M.DASHBOARD, M.PACIENTES, M.AGENDA, M.DOCUMENTOS, M.FINANCEIRO, M.NOTIFICACOES, M.ANALYTICS,
   ],
   // Este sistema não restringe visibilidade por papel: todo usuário vê tudo
   // por padrão (super-admin ainda pode revogar módulo individualmente).

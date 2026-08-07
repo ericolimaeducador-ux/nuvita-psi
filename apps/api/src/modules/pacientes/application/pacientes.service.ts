@@ -1,11 +1,5 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuthTokenPayload, Papel } from '../../../../../../packages/shared/src/auth';
-import {
-  EtapaFluxoClinico,
-  podeAvancarPara,
-  PROXIMA_ETAPA_MANUAL,
-  PAPEIS_AVANCO_MANUAL,
-} from '../../../../../../packages/shared/src/fluxo-clinico';
 import { resolveTenantClinicaId } from '../../../common/tenancy/resolve-clinica-id';
 import { AUDIT_LOG_REPOSITORY } from '../../auth/auth.constants';
 import { AuditLogRepository } from '../../auth/application/ports/audit-log.repository';
@@ -17,9 +11,6 @@ import { UpdateObservacoesPacienteDto } from './dto/update-observacoes-paciente.
 import { PACIENTE_REPOSITORY } from '../pacientes.constants';
 import { Paciente, ProjetoPaciente } from '../domain/paciente.entity';
 import { PacienteRepository } from './ports/paciente.repository';
-
-/** Papéis profissionais que NUNCA veem pacientes do Projeto PSI (exclusivo do psicólogo). */
-const PAPEIS_SEM_ACESSO_PSI: Papel[] = [Papel.MEDICO, Papel.ENFERMEIRO];
 
 export interface RequestAuditContext {
   ip: string;
@@ -55,7 +46,6 @@ export class PacientesService {
             versao: dto.consentimentoLGPD.versao,
           }
         : undefined,
-      programaIU: dto.programaIU ?? false,
       projeto: dto.projeto,
       representante: dto.representante,
     });
@@ -70,20 +60,7 @@ export class PacientesService {
 
   async list(query: ListPacientesQueryDto, context: RequestAuditContext) {
     const clinicaId = this.resolveClinicaId(context.user, query.clinicaId);
-    const { projeto, projetoExcluir, semResultados } = this.resolveVisibilidadeProjeto(
-      context.user.papel,
-      query.projeto,
-    );
-
-    // Papel restrito pediu um projeto que não pode ver (PSI): lista vazia sem consultar o banco.
-    if (semResultados) {
-      await this.audit(query.nome ? AuditEvent.PATIENT_SEARCHED : AuditEvent.PATIENT_LISTED, context, {
-        clinicaId,
-        criterio: query.nome ? 'nome' : 'lista',
-        quantidade: 0,
-      });
-      return { items: [], hasMore: false };
-    }
+    const { projeto } = this.resolveVisibilidadeProjeto(context.user.papel, query.projeto);
 
     if (query.cpf) {
       const paciente = await this.pacientes.findByCpf(clinicaId, query.cpf, query.incluirInativos);
@@ -107,11 +84,8 @@ export class PacientesService {
           cursor: query.cursor,
           limit: query.limit,
           incluirInativos: query.incluirInativos,
-          programaIU: query.programaIU,
           projeto,
-          projetoExcluir,
           representante: query.representante,
-          etapaFluxo: query.etapaFluxo,
           dataNascimento: query.dataNascimento,
           sort: query.sort,
         })
@@ -120,11 +94,8 @@ export class PacientesService {
           cursor: query.cursor,
           limit: query.limit,
           incluirInativos: query.incluirInativos,
-          programaIU: query.programaIU,
           projeto,
-          projetoExcluir,
           representante: query.representante,
-          etapaFluxo: query.etapaFluxo,
           dataNascimento: query.dataNascimento,
           sort: query.sort,
         });
@@ -269,128 +240,25 @@ export class PacientesService {
     };
   }
 
-  /**
-   * Único ponto de mutação de etapaFluxo no sistema. Chamado pelos services de
-   * avaliacao-iu, followup, agendamentos, checklist-documentos, laudo-medico
-   * e entregas quando um evento de negócio faz o paciente
-   * avançar no pipeline clínico. Nunca lança exceção: uma falha nessa
-   * transição secundária não pode derrubar a operação clínica primária que a
-   * disparou (criar avaliação, follow-up, laudo, etc.).
-   */
-  async avancarEtapaFluxo(
-    clinicaId: string,
-    pacienteId: string,
-    novaEtapa: EtapaFluxoClinico,
-    context: RequestAuditContext,
-  ): Promise<void> {
-    try {
-      const atual = await this.pacientes.findById(clinicaId, pacienteId);
-      if (!atual) {
-        this.logger.warn(`avancarEtapaFluxo: paciente ${pacienteId} nao encontrado (clinica ${clinicaId}).`);
-        return;
-      }
-      if (!podeAvancarPara(atual.etapaFluxo, novaEtapa)) {
-        return;
-      }
-
-      await this.pacientes.update(clinicaId, pacienteId, {
-        etapaFluxo: novaEtapa,
-        etapaFluxoDesde: new Date(),
-      });
-
-      await this.audit(AuditEvent.PIPELINE_STAGE_CHANGED, context, {
-        clinicaId,
-        pacienteId,
-        etapaAnterior: atual.etapaFluxo,
-        etapaNova: novaEtapa,
-      });
-    } catch (err) {
-      this.logger.error(
-        `avancarEtapaFluxo falhou para paciente ${pacienteId} -> ${novaEtapa}: ${(err as Error).message}`,
-      );
-    }
-  }
-
-  /**
-   * Avanço MANUAL, acionado pelo botão "Avançar etapa" na tela do paciente —
-   * ao contrário de avancarEtapaFluxo (chamado internamente pelos hooks de
-   * outros módulos), este É a ação primária do request e por isso lança
-   * exceção normalmente em vez de engolir o erro. Só permite mover para a
-   * ÚNICA próxima etapa definida em PROXIMA_ETAPA_MANUAL (nunca pula etapas),
-   * e só para quem tem o papel autorizado a fechar aquela etapa específica
-   * (ADMIN sempre pode, como qualquer ação administrativa do sistema).
-   */
-  async avancarEtapaManual(
-    pacienteId: string,
-    clinicaId: string | undefined,
-    context: RequestAuditContext,
-  ): Promise<Paciente> {
-    const resolvedClinicaId = this.resolveClinicaId(context.user, clinicaId);
-    const paciente = await this.pacientes.findById(resolvedClinicaId, pacienteId);
-    if (!paciente) throw new NotFoundException('Paciente nao encontrado.');
-
-    const proximaEtapa = PROXIMA_ETAPA_MANUAL[paciente.etapaFluxo];
-    if (!proximaEtapa) {
-      throw new BadRequestException('Esta etapa nao pode ser avancada manualmente.');
-    }
-
-    const papeisPermitidos = PAPEIS_AVANCO_MANUAL[paciente.etapaFluxo] ?? [];
-    if (context.user.papel !== Papel.ADMIN && !papeisPermitidos.includes(context.user.papel)) {
-      throw new ForbiddenException('Seu papel nao pode avancar esta etapa.');
-    }
-
-    await this.pacientes.update(resolvedClinicaId, pacienteId, {
-      etapaFluxo: proximaEtapa,
-      etapaFluxoDesde: new Date(),
-    });
-
-    await this.audit(AuditEvent.PIPELINE_STAGE_CHANGED, context, {
-      clinicaId: resolvedClinicaId,
-      pacienteId,
-      etapaAnterior: paciente.etapaFluxo,
-      etapaNova: proximaEtapa,
-      manual: true,
-    });
-
-    const atualizado = await this.pacientes.findById(resolvedClinicaId, pacienteId);
-    if (!atualizado) throw new NotFoundException('Paciente nao encontrado.');
-    return atualizado;
-  }
-
   private resolveClinicaId(user: AuthTokenPayload, requestedClinicaId?: string): string {
     return resolveTenantClinicaId(user, requestedClinicaId);
   }
 
   /**
-   * Pacientes do Projeto PSI (atendimento psicológico) ficam isolados dos
-   * demais: só o PSICOLOGO os enxerga, e os outros profissionais de
-   * atendimento (médico/enfermeiro) nunca os veem — mesmo pedindo
-   * `projeto` explicitamente na query. ADMIN/SECRETARIA continuam sem
-   * restrição (visão administrativa da clínica inteira).
+   * Pacientes do Projeto PSI (atendimento psicológico) ficam isolados: só o
+   * PSICOLOGO os enxerga (o filtro de projeto solicitado é irrelevante para
+   * ele). Demais papéis têm filtro livre por qualquer projeto.
    */
   private resolveVisibilidadeProjeto(
     papel: Papel,
     projetoSolicitado?: ProjetoPaciente,
-  ): { projeto?: ProjetoPaciente; projetoExcluir?: ProjetoPaciente; semResultados?: boolean } {
-    // Psicólogo: enxerga somente PSI (o filtro de projeto solicitado é irrelevante).
+  ): { projeto?: ProjetoPaciente } {
     if (papel === Papel.PSICOLOGO) return { projeto: ProjetoPaciente.PSI };
-
-    // Médico/enfermeiro nunca veem PSI, mas AINDA devem respeitar um
-    // filtro explícito por Alpha/Beta — antes o projetoSolicitado era descartado
-    // e a lista voltava com todos os projetos não-PSI (Alpha + Beta juntos).
-    if (PAPEIS_SEM_ACESSO_PSI.includes(papel)) {
-      if (projetoSolicitado === ProjetoPaciente.PSI) return { semResultados: true };
-      if (projetoSolicitado) return { projeto: projetoSolicitado };
-      return { projetoExcluir: ProjetoPaciente.PSI };
-    }
-
-    // Admin/secretaria: filtro livre por qualquer projeto.
     return { projeto: projetoSolicitado };
   }
 
   private podeVerPaciente(papel: Papel, projetoPaciente?: ProjetoPaciente): boolean {
     if (papel === Papel.PSICOLOGO) return projetoPaciente === ProjetoPaciente.PSI;
-    if (PAPEIS_SEM_ACESSO_PSI.includes(papel)) return projetoPaciente !== ProjetoPaciente.PSI;
     return true;
   }
 

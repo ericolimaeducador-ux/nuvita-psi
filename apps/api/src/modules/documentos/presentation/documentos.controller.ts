@@ -15,7 +15,7 @@ import { DocumentoRequestContext, DocumentosService } from '../application/docum
 // conseguir usá-lo de fato.
 @Controller('documentos')
 @UseGuards(JwtAuthGuard, TenantRequiredGuard, RolesGuard)
-@Roles(Papel.SECRETARIA, Papel.MEDICO, Papel.ENFERMEIRO, Papel.ADMIN)
+@Roles(Papel.SECRETARIA, Papel.MEDICO, Papel.ADMIN)
 export class DocumentosController {
   constructor(private readonly documentosService: DocumentosService) {}
 

@@ -16,11 +16,6 @@ import { NotificacoesModule } from './modules/notificacoes/notificacoes.module';
 import { PacientesModule } from './modules/pacientes/pacientes.module';
 import { ProntuariosModule } from './modules/prontuarios/prontuarios.module';
 import { TelemedicinaModule } from './modules/telemedicina/telemedicina.module';
-import { ProdutosModule } from './modules/produtos/produtos.module';
-import { AvaliacaoIUModule } from './modules/avaliacao-iu/avaliacao-iu.module';
-import { FollowUpModule } from './modules/followup/followup.module';
-import { LaudoMedicoModule } from './modules/laudo-medico/laudo-medico.module';
-import { EntregasModule } from './modules/entregas/entregas.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { ChecklistDocumentosModule } from './modules/checklist-documentos/checklist-documentos.module';
 import { ObservacoesPacienteModule } from './modules/observacoes-paciente/observacoes-paciente.module';
@@ -54,11 +49,6 @@ import { ObservacoesPacienteModule } from './modules/observacoes-paciente/observ
     TelemedicinaModule,
     AnalyticsModule,
     HealthModule,
-    ProdutosModule,
-    AvaliacaoIUModule,
-    FollowUpModule,
-    LaudoMedicoModule,
-    EntregasModule,
     SuperAdminModule,
     ChecklistDocumentosModule,
     ObservacoesPacienteModule,
