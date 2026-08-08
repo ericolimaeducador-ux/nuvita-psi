@@ -41,9 +41,19 @@ import { IaClinicaModule } from './modules/ia-clinica/ia-clinica.module';
     MongooseModule.forRootAsync({
       imports: [SecurityModule],
       inject: [AppConfigService],
-      useFactory: (config: AppConfigService) => ({
-        uri: config.getConfig().mongodbUri,
-      }),
+      useFactory: (config: AppConfigService) => {
+        const { mongodbUri, nodeEnv } = config.getConfig();
+        return {
+          uri: mongodbUri,
+          // O default do Mongoose é autoIndex: true, inclusive em produção —
+          // ele tenta construir todos os índices declarados nos schemas a cada
+          // subida. Com as collections pequenas de hoje é inofensivo, mas
+          // conforme pacientes/prontuarios crescerem isso estoura o timeout de
+          // startup do Cloud Run e derruba o deploy. Fora de dev os índices
+          // passam a ser responsabilidade de migração/ops.
+          autoIndex: nodeEnv === 'development',
+        };
+      },
     }),
     AuthModule,
     ClinicasModule,
