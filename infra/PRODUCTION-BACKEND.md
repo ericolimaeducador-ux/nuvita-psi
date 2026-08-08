@@ -42,6 +42,23 @@ O inventário de quais segredos entram no `cloudrun.env.yaml` está no
 `PRODUCTION-CHECKLIST.md`, item 1. **Gere segredos próprios do nuvita-psi** —
 não reaproveite os do Nuvita original, mesmo compartilhando o projeto GCP.
 
+### Antes de colar o `CLOUDRUN_ENV_YAML`, valide localmente
+
+Desde a seção 3, um segredo fraco impede o boot. Sem pré-checagem, isso só
+apareceria no log do Cloud Run — depois do build da imagem e do deploy, que é
+justamente quando você não sabe se o erro é seu ou da infra:
+
+```bash
+npm run build --workspace=apps/api     # o check valida contra o código compilado
+node scripts/gen-cloudrun-env.cjs
+npm run check:cloudrun-env             # exit 0 = a API sobe com esse arquivo
+```
+
+O script roda o **mesmo `AppConfigService.initialize()`** que a API roda ao
+subir — não reimplementa as regras de validação. Se reimplementasse, as duas
+cópias divergiriam na primeira vez que alguém mexesse numa delas, e o script
+passaria a mentir exatamente quando você mais depende dele.
+
 Verificação:
 
 ```bash
