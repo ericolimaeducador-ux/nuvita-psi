@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-  agendaApi, pacientesApi, checklistDocumentosApi, psicoFinanceiroApi,
+  agendaApi, pacientesApi, psicoFinanceiroApi,
 } from '@/api/resources';
 import { toItems } from '@/utils';
 import { useAuth } from '@/auth/AuthContext';
@@ -36,7 +36,6 @@ function statusVariant(s: StatusAgendamento): 'default' | 'success' | 'destructi
 
 export function DashboardPage() {
   const { user, permissoes } = useAuth();
-  const podeVerChecklist = permissoes.includes(Modulo.DOCUMENTOS);
   const podeVerPsicologia = permissoes.includes(Modulo.FINANCEIRO_PSICOLOGIA);
 
   const painelPsiQ = useQuery({
@@ -44,12 +43,6 @@ export function DashboardPage() {
     queryFn: () => psicoFinanceiroApi.painel(),
     enabled: podeVerPsicologia,
     retry: false,
-  });
-
-  const pendentesDocsQ = useQuery({
-    queryKey: ['checklist-documentos', 'resumo-pendentes'],
-    queryFn: () => checklistDocumentosApi.resumoPendentes(),
-    enabled: podeVerChecklist,
   });
 
   const hojeIni = dayjs().startOf('day').toISOString();
@@ -83,23 +76,6 @@ export function DashboardPage() {
         title={`Olá, ${user?.nome ?? user?.email ?? ''}`}
         subtitle={dayjs().format('dddd, DD [de] MMMM [de] YYYY')}
       />
-
-      {/* Alerta de documentos pendentes (checklist da secretaria/admin) */}
-      {podeVerChecklist && !pendentesDocsQ.isLoading && (pendentesDocsQ.data?.pendentes ?? 0) > 0 && (
-        <Link to="/pacientes" className="block mb-6">
-          <div className="flex items-center gap-3 glass rounded-xl p-4 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors">
-            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">
-                {pendentesDocsQ.data?.pendentes} documento{pendentesDocsQ.data?.pendentes !== 1 ? 's' : ''} pendente{pendentesDocsQ.data?.pendentes !== 1 ? 's' : ''} no checklist
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Abra o cadastro do paciente para ver quais documentos faltam receber.
-              </p>
-            </div>
-          </div>
-        </Link>
-      )}
 
       {/* Psicoterapia: em que sessão cada paciente está e como está o ciclo de cobrança */}
       {podeVerPsicologia && painelPsiQ.data && painelPsiQ.data.pacientes.length > 0 && (

@@ -108,7 +108,6 @@ presentation/     Controllers, guards e decorators HTTP
 
 Módulos: `auth`, `clinicas`, `pacientes`, `agendamentos`, `prontuarios`,
 `documentos`, `notificacoes`, `financeiro`, `telemedicina`, `analytics`,
-`checklist-documentos`,
 `observacoes-paciente`, `super-admin`, `health` — mais `common/tenancy`
 (resolução de tenant por request) e `common/security`.
 

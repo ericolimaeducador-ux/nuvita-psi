@@ -1,8 +1,6 @@
 import { api } from './client';
 import type {
   Agendamento,
-  ChecklistDocumentoItem,
-  DashboardFinanceiro,
   Documento,
   Lancamento,
   ListUsuariosResult,
@@ -175,45 +173,6 @@ export const notificacoesApi = {
     api.post('/notificacoes', payload).then((r) => r.data),
 };
 
-// ---------- Financeiro ----------
-export interface ListLancamentosParams {
-  tipo?: string;
-  status?: string;
-  dataInicio?: string;
-  dataFim?: string;
-  cursor?: string;
-  limit?: number;
-}
-
-export interface CreateLancamentoPayload {
-  clinicaId: string;
-  tipo: string;
-  descricao: string;
-  valor: number;
-  formaPagamento?: string;
-  vencimento?: string;
-  pacienteId?: string;
-  agendamentoId?: string;
-  observacoes?: string;
-}
-
-export const financeiroApi = {
-  dashboard: (params?: { dataInicio?: string; dataFim?: string }) =>
-    api.get<DashboardFinanceiro>('/financeiro/dashboard', { params }).then((r) => r.data),
-  list: (params: ListLancamentosParams = {}) =>
-    api
-      .get<PageResult<Lancamento> | Lancamento[]>('/financeiro/lancamentos', { params })
-      .then((r) => r.data),
-  create: (payload: CreateLancamentoPayload) =>
-    api.post<Lancamento>('/financeiro/lancamentos', payload).then((r) => r.data),
-  receber: (id: string, formaPagamento?: string) =>
-    api
-      .patch(`/financeiro/lancamentos/${id}/receber`, { formaPagamento })
-      .then((r) => r.data),
-  cancelar: (id: string) =>
-    api.patch(`/financeiro/lancamentos/${id}/cancelar`).then((r) => r.data),
-};
-
 // ---------- Financeiro da psicologia ----------
 export interface CobrarCicloPayload {
   pacienteId: string;
@@ -298,22 +257,6 @@ export const observacoesPacienteApi = {
     api.post<ObservacaoPaciente>('/observacoes-paciente', payload).then((r) => r.data),
   listByPaciente: (pacienteId: string) =>
     api.get<ObservacaoPaciente[]>('/observacoes-paciente', { params: { pacienteId } }).then((r) => r.data),
-};
-
-// ---------- Checklist de Documentos ----------
-export const checklistDocumentosApi = {
-  create: (payload: { pacienteId: string; nome: string; observacao?: string }) =>
-    api.post<ChecklistDocumentoItem>('/checklist-documentos', payload).then((r) => r.data),
-  listByPaciente: (pacienteId: string) =>
-    api.get<ChecklistDocumentoItem[]>('/checklist-documentos', { params: { pacienteId } }).then((r) => r.data),
-  update: (id: string, payload: { status?: string; observacao?: string; nome?: string }) =>
-    api.patch<ChecklistDocumentoItem>(`/checklist-documentos/${id}`, payload).then((r) => r.data),
-  remove: (id: string) =>
-    api.delete<{ ok: true }>(`/checklist-documentos/${id}`).then((r) => r.data),
-  criarPadrao: (pacienteId: string) =>
-    api.post<ChecklistDocumentoItem[]>('/checklist-documentos/padrao', { pacienteId }).then((r) => r.data),
-  resumoPendentes: () =>
-    api.get<{ pendentes: number }>('/checklist-documentos/resumo-pendentes').then((r) => r.data),
 };
 
 // ---------- Super Admin ----------

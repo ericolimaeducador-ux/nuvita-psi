@@ -17,7 +17,6 @@ import { PacientesModule } from './modules/pacientes/pacientes.module';
 import { ProntuariosModule } from './modules/prontuarios/prontuarios.module';
 import { TelemedicinaModule } from './modules/telemedicina/telemedicina.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
-import { ChecklistDocumentosModule } from './modules/checklist-documentos/checklist-documentos.module';
 import { ObservacoesPacienteModule } from './modules/observacoes-paciente/observacoes-paciente.module';
 
 @Module({
@@ -50,7 +49,6 @@ import { ObservacoesPacienteModule } from './modules/observacoes-paciente/observ
     AnalyticsModule,
     HealthModule,
     SuperAdminModule,
-    ChecklistDocumentosModule,
     ObservacoesPacienteModule,
   ],
 })
