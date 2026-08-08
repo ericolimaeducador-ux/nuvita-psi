@@ -56,7 +56,7 @@ export function AgendaPage() {
   const [visao, setVisao] = useState<'calendario' | 'lista'>('calendario');
 
   // Form state
-  const [fModalidade, setFModalidade] = useState<ModalidadeAtendimento>(ModalidadeAtendimento.MEDICO);
+  const [fModalidade, setFModalidade] = useState<ModalidadeAtendimento>(ModalidadeAtendimento.PSICOLOGIA);
   const [fPacienteId, setFPacienteId] = useState('');
   const [fMedicoId, setFMedicoId] = useState(
     user && PAPEIS_PROFISSIONAIS.includes(user.papel) ? user.id : ''
@@ -110,16 +110,12 @@ export function AgendaPage() {
     [pacientes],
   );
 
-  function iniciarAtendimento(a: Agendamento) {
-    const tipo = TIPO_ATENDIMENTO_POR_AGENDAMENTO[a.tipo];
-    if (!tipo) return;
-    navigate(`/pacientes/${a.pacienteId}`, {
-      state: { iniciarAgendamento: { agendamentoId: a.id, tipo, data: a.dataHoraInicio } },
-    });
+  function iniciarAtendimento(_a: Agendamento) {
+    navigate('/atendimento-psicologico');
   }
 
   function resetForm() {
-    setFModalidade(ModalidadeAtendimento.MEDICO);
+    setFModalidade(ModalidadeAtendimento.PSICOLOGIA);
     setFPacienteId('');
     setFMedicoId(user && PAPEIS_PROFISSIONAIS.includes(user.papel) ? user.id : '');
     setFTipo('');

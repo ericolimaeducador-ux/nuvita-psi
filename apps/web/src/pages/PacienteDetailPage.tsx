@@ -34,7 +34,6 @@ import { formatCpf, formatData, idade, toItems, formatEndereco } from '@/utils';
 import {
   Sexo, SEXO_LABEL, ProjetoPaciente, PROJETO_LABEL, STATUS_AGENDAMENTO_LABEL, TIPO_ATENDIMENTO_LABEL,
   Papel, TIPO_DOCUMENTO_LABEL,
-  StatusAgendamento,
   type Agendamento, type Prontuario, type Documento, type Paciente,
 } from '@/types';
 
