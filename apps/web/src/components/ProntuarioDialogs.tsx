@@ -9,10 +9,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { prontuariosApi } from '@/api/resources';
 import { apiErrorMessage } from '@/api/client';
 import { toast } from '@/components/ui/use-toast';
+import { CAMPOS_POR_LINHA } from '@/lib/linhaTerapeutica';
 import {
-  TipoAtendimento, TIPO_ATENDIMENTO_LABEL,
+  TipoAtendimento, TIPO_ATENDIMENTO_LABEL, LinhaTerapeutica,
   type Prontuario, type ExameSegmentar,
 } from '@/types';
+
+// Achatado de todas as linhas terapêuticas — a leitura mostra qualquer campo
+// preenchido no registro, independente da linha atual do paciente (evita
+// esconder dado histórico caso a classificação mude depois).
+const CAMPOS_LINHA_TODAS = Object.values(LinhaTerapeutica).flatMap((lt) => CAMPOS_POR_LINHA[lt]);
 
 const EXAME_SEGMENTAR_CAMPOS: { key: keyof ExameSegmentar; label: string }[] = [
   { key: 'cabecaPescoco', label: 'Cabeça e pescoço' },
@@ -145,6 +151,9 @@ export function ProntuarioDetailDialog({
                 <CampoSe label="Encaminhamentos">{pr.registroPsicologico.encaminhamentos}</CampoSe>
                 <CampoSe label="Anotações livres">{pr.registroPsicologico.anotacoesLivres}</CampoSe>
                 <CampoSe label="CRP">{pr.registroPsicologico.crp}</CampoSe>
+                {CAMPOS_LINHA_TODAS.map(({ key, label }) => (
+                  <CampoSe key={key} label={label}>{pr.registroPsicologico?.[key] as string | undefined}</CampoSe>
+                ))}
               </div>
             )}
 

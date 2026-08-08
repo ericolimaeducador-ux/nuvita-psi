@@ -120,6 +120,27 @@ export interface RegistroPsicologico {
   anotacoesLivres?: string;
   /** CRP do psicólogo responsável. */
   crp?: string;
+
+  // Campos específicos por linha terapêutica do paciente (TCC, Psicanálise,
+  // Humanista, Gestalt, Junguiana) — preenchidos condicionalmente conforme
+  // Paciente.linhaTerapeutica, ver apps/web/src/lib/linhaTerapeutica.ts.
+  tccPensamentosAutomaticos?: string;
+  tccDistorcoesCognitivas?: string;
+  tccTarefaCasa?: string;
+  tccRegistroComportamental?: string;
+  psicanaliseAssociacaoLivre?: string;
+  psicanaliseConteudoOnirico?: string;
+  psicanaliseDinamicaTransferencial?: string;
+  psicanaliseRepeticoes?: string;
+  humanistaCongruencia?: string;
+  humanistaAutorrealizacao?: string;
+  humanistaAcolhimento?: string;
+  gestaltAwareness?: string;
+  gestaltFiguraFundo?: string;
+  gestaltContatoFronteira?: string;
+  junguianaSimbolosArquetipicos?: string;
+  junguianaMaterialOnirico?: string;
+  junguianaProcessoIndividuacao?: string;
 }
 
 export interface ArquivoProntuario {

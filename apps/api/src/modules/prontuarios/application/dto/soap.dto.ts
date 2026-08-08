@@ -213,4 +213,22 @@ export class RegistroPsicologicoDto {
   @IsOptional() @IsString() encaminhamentos?: string;
   @IsOptional() @IsString() anotacoesLivres?: string;
   @IsOptional() @IsString() crp?: string;
+
+  @IsOptional() @IsString() tccPensamentosAutomaticos?: string;
+  @IsOptional() @IsString() tccDistorcoesCognitivas?: string;
+  @IsOptional() @IsString() tccTarefaCasa?: string;
+  @IsOptional() @IsString() tccRegistroComportamental?: string;
+  @IsOptional() @IsString() psicanaliseAssociacaoLivre?: string;
+  @IsOptional() @IsString() psicanaliseConteudoOnirico?: string;
+  @IsOptional() @IsString() psicanaliseDinamicaTransferencial?: string;
+  @IsOptional() @IsString() psicanaliseRepeticoes?: string;
+  @IsOptional() @IsString() humanistaCongruencia?: string;
+  @IsOptional() @IsString() humanistaAutorrealizacao?: string;
+  @IsOptional() @IsString() humanistaAcolhimento?: string;
+  @IsOptional() @IsString() gestaltAwareness?: string;
+  @IsOptional() @IsString() gestaltFiguraFundo?: string;
+  @IsOptional() @IsString() gestaltContatoFronteira?: string;
+  @IsOptional() @IsString() junguianaSimbolosArquetipicos?: string;
+  @IsOptional() @IsString() junguianaMaterialOnirico?: string;
+  @IsOptional() @IsString() junguianaProcessoIndividuacao?: string;
 }

@@ -8,7 +8,7 @@ import dayjs from 'dayjs';
 import {
   ArrowLeft, User, Download, Plus, FileText,
   CalendarClock, ChevronDown, Stethoscope,
-  Trash2, Pencil,
+  Trash2, Pencil, FileSignature,
 } from 'lucide-react';
 import { ProntuarioDetailDialog } from '@/components/ProntuarioDialogs';
 import { NovoDocumentoDialog } from '@/components/NovoDocumentoDialog';
@@ -33,7 +33,7 @@ import { apiErrorMessage } from '@/api/client';
 import { formatCpf, formatData, idade, toItems, formatEndereco } from '@/utils';
 import {
   Sexo, SEXO_LABEL, ProjetoPaciente, PROJETO_LABEL, STATUS_AGENDAMENTO_LABEL, TIPO_ATENDIMENTO_LABEL,
-  Papel, TIPO_DOCUMENTO_LABEL,
+  Papel, TIPO_DOCUMENTO_LABEL, LinhaTerapeutica, LINHA_TERAPEUTICA_LABEL,
   type Agendamento, type Prontuario, type Documento, type Paciente,
 } from '@/types';
 
@@ -240,6 +240,27 @@ export function PacienteDetailPage() {
         )}
       </Secao>
 
+      {/* Documentos clínicos — emissão de atestado/laudo/encaminhamento/prescrição,
+          distinto da seção "Documentos" abaixo (que é upload de arquivo). */}
+      {ehPsicologo && (
+        <Secao icon={<FileSignature className="h-4 w-4" />} titulo="Documentos clínicos" defaultOpen={false}>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate(`/pacientes/${id}/documentos/atestado`)}>
+              Atestado de comparecimento
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/pacientes/${id}/documentos/laudo`)}>
+              Laudo psicoterápico
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/pacientes/${id}/documentos/encaminhamento`)}>
+              Encaminhamento
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/pacientes/${id}/documentos/prescricao`)}>
+              Prescrição de cuidados
+            </Button>
+          </div>
+        </Secao>
+      )}
+
       {/* Observações gerais — campo livre p/ qualquer profissional de atendimento (fora do escopo do psicólogo) */}
       {!ehPsicologo && <ObservacoesSecao pacienteId={id} observacoesAtuais={p.observacoes} />}
 
@@ -359,6 +380,7 @@ const editPacienteSchema = z.object({
   dataNascimento: z.string().optional(),
   sexo: z.nativeEnum(Sexo).optional().or(z.literal('')),
   projeto: z.nativeEnum(ProjetoPaciente).optional().or(z.literal('')),
+  linhaTerapeutica: z.nativeEnum(LinhaTerapeutica).optional().or(z.literal('')),
   representante: z.string().optional(),
   telefone: z.string().optional(),
   email: z.string().email('E-mail inválido.').optional().or(z.literal('')),
@@ -399,6 +421,7 @@ function DadosCadastraisSecao({ paciente: p, pacienteId }: { paciente: Paciente;
       dataNascimento: p.dataNascimento ? p.dataNascimento.slice(0, 10) : '',
       sexo: p.sexo ?? '',
       projeto: ehPsicologo ? ProjetoPaciente.PSI : (p.projeto ?? ''),
+      linhaTerapeutica: p.linhaTerapeutica ?? '',
       representante: p.representante ?? '',
       telefone: p.telefone ?? '',
       email: p.email ?? '',
@@ -443,6 +466,7 @@ function DadosCadastraisSecao({ paciente: p, pacienteId }: { paciente: Paciente;
       dataNascimento: v.dataNascimento ? dayjs(v.dataNascimento).format('YYYY-MM-DD') : undefined,
       sexo: v.sexo || undefined,
       projeto: v.projeto || undefined,
+      linhaTerapeutica: v.linhaTerapeutica || undefined,
       representante: v.representante?.trim() || undefined,
       telefone: v.telefone || undefined,
       email: v.email || undefined,
@@ -471,6 +495,7 @@ function DadosCadastraisSecao({ paciente: p, pacienteId }: { paciente: Paciente;
         <DescItem label="Nascimento" value={formatData(p.dataNascimento)} />
         <DescItem label="Sexo" value={p.sexo ? SEXO_LABEL[p.sexo] : '—'} />
         <DescItem label="Projeto" value={p.projeto ? PROJETO_LABEL[p.projeto] : '—'} />
+        <DescItem label="Linha terapêutica" value={p.linhaTerapeutica ? LINHA_TERAPEUTICA_LABEL[p.linhaTerapeutica] : '—'} />
         <DescItem label="Representante" value={p.representante || '—'} />
         <DescItem label="Telefone" value={p.telefone || '—'} />
         <DescItem label="E-mail" value={p.email || '—'} />
@@ -518,6 +543,18 @@ function DadosCadastraisSecao({ paciente: p, pacienteId }: { paciente: Paciente;
                 </Select>
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label>Linha terapêutica</Label>
+              <Select value={watch('linhaTerapeutica') || undefined} onValueChange={(v) => setValue('linhaTerapeutica', v as LinhaTerapeutica)}>
+                <SelectTrigger><SelectValue placeholder="Sem classificação" /></SelectTrigger>
+                <SelectContent>
+                  {Object.values(LinhaTerapeutica).map((lt) => (
+                    <SelectItem key={lt} value={lt}>{LINHA_TERAPEUTICA_LABEL[lt]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="editRepresentante">Representante (quem indicou)</Label>

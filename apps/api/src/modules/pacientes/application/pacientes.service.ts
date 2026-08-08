@@ -47,6 +47,7 @@ export class PacientesService {
           }
         : undefined,
       projeto: dto.projeto,
+      linhaTerapeutica: dto.linhaTerapeutica,
       representante: dto.representante,
     });
 
@@ -85,6 +86,7 @@ export class PacientesService {
           limit: query.limit,
           incluirInativos: query.incluirInativos,
           projeto,
+          linhaTerapeutica: query.linhaTerapeutica,
           representante: query.representante,
           dataNascimento: query.dataNascimento,
           sort: query.sort,
@@ -95,6 +97,7 @@ export class PacientesService {
           limit: query.limit,
           incluirInativos: query.incluirInativos,
           projeto,
+          linhaTerapeutica: query.linhaTerapeutica,
           representante: query.representante,
           dataNascimento: query.dataNascimento,
           sort: query.sort,

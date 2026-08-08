@@ -22,7 +22,10 @@ import { apiErrorMessage } from '@/api/client';
 import { toItems, formatCpf, formatData, idade } from '@/utils';
 import { useAuth } from '@/auth/AuthContext';
 import { toast } from '@/components/ui/use-toast';
-import { Sexo, SEXO_LABEL, ProjetoPaciente, PROJETO_LABEL, Papel, type Paciente } from '@/types';
+import {
+  Sexo, SEXO_LABEL, ProjetoPaciente, PROJETO_LABEL, Papel,
+  LinhaTerapeutica, LINHA_TERAPEUTICA_LABEL, type Paciente,
+} from '@/types';
 
 const pacienteSchema = z.object({
   nome: z.string().min(1, 'Informe o nome.'),
@@ -30,6 +33,7 @@ const pacienteSchema = z.object({
   dataNascimento: z.string().optional(),
   sexo: z.nativeEnum(Sexo, { error: 'Selecione.' }).optional(),
   projeto: z.nativeEnum(ProjetoPaciente, { error: 'Selecione.' }).optional(),
+  linhaTerapeutica: z.nativeEnum(LinhaTerapeutica, { error: 'Selecione.' }).optional(),
   representante: z.string().optional(),
   telefone: z.string().optional(),
   email: z.string().email('E-mail inválido.').optional().or(z.literal('')),
@@ -63,6 +67,7 @@ export function PacientesPage() {
   const [busca, setBusca] = useState('');
   const [nascFiltro, setNascFiltro] = useState('');
   const [projetoFiltro, setProjetoFiltro] = useState<ProjetoPaciente | 'all'>('all');
+  const [linhaFiltro, setLinhaFiltro] = useState<LinhaTerapeutica | 'all'>('all');
   const [representanteFiltro, setRepresentanteFiltro] = useState('');
   const [sort, setSort] = useState<PacienteSort>('recentes');
   const [incluirInativos, setIncluirInativos] = useState(false);
@@ -94,6 +99,7 @@ export function PacientesPage() {
     cpf: buscaEhCpf ? buscaDigitos : undefined,
     dataNascimento: nascFiltro || undefined,
     projeto: projetoFiltro !== 'all' ? projetoFiltro : undefined,
+    linhaTerapeutica: linhaFiltro !== 'all' ? linhaFiltro : undefined,
     representante: representanteFiltro || undefined,
     sort,
     incluirInativos: incluirInativos || undefined,
@@ -107,7 +113,7 @@ export function PacientesPage() {
   });
 
   const temFiltros = Boolean(
-    buscaInput || nascFiltro || projetoFiltro !== 'all' || representanteFiltro || sort !== 'recentes' || incluirInativos,
+    buscaInput || nascFiltro || projetoFiltro !== 'all' || linhaFiltro !== 'all' || representanteFiltro || sort !== 'recentes' || incluirInativos,
   );
 
   function limparFiltros() {
@@ -115,6 +121,7 @@ export function PacientesPage() {
     setBusca('');
     setNascFiltro('');
     setProjetoFiltro('all');
+    setLinhaFiltro('all');
     setRepresentanteFiltro('');
     setSort('recentes');
     setIncluirInativos(false);
@@ -152,6 +159,7 @@ export function PacientesPage() {
       dataNascimento: v.dataNascimento ? dayjs(v.dataNascimento).format('YYYY-MM-DD') : undefined,
       sexo: v.sexo || undefined,
       projeto: ehPsicologo ? ProjetoPaciente.PSI : (v.projeto || undefined),
+      linhaTerapeutica: v.linhaTerapeutica || undefined,
       representante: v.representante?.trim() || undefined,
       telefone: v.telefone || undefined,
       email: v.email || undefined,
@@ -231,6 +239,19 @@ export function PacientesPage() {
             )}
 
             <div className="space-y-1">
+              <Label>Linha terapêutica</Label>
+              <Select value={linhaFiltro} onValueChange={(v) => setLinhaFiltro(v as LinhaTerapeutica | 'all')}>
+                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as linhas</SelectItem>
+                  {Object.values(LinhaTerapeutica).map((lt) => (
+                    <SelectItem key={lt} value={lt}>{LINHA_TERAPEUTICA_LABEL[lt]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
               <Label htmlFor="representanteFiltro">Representante</Label>
               <Input
                 id="representanteFiltro"
@@ -275,6 +296,7 @@ export function PacientesPage() {
                   <TableHead>Idade</TableHead>
                   <TableHead>Sexo</TableHead>
                   <TableHead>Projeto</TableHead>
+                  <TableHead>Linha terapêutica</TableHead>
                   <TableHead>Representante</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Situação</TableHead>
@@ -291,6 +313,9 @@ export function PacientesPage() {
                     <TableCell>{p.sexo ? SEXO_LABEL[p.sexo] : '—'}</TableCell>
                     <TableCell>
                       {p.projeto ? <Badge variant="secondary">{PROJETO_LABEL[p.projeto]}</Badge> : '—'}
+                    </TableCell>
+                    <TableCell>
+                      {p.linhaTerapeutica ? <Badge variant="secondary">{LINHA_TERAPEUTICA_LABEL[p.linhaTerapeutica]}</Badge> : '—'}
                     </TableCell>
                     <TableCell>{p.representante || '—'}</TableCell>
                     <TableCell>{p.telefone || '—'}</TableCell>
@@ -315,7 +340,7 @@ export function PacientesPage() {
                 ))}
                 {pacientes.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">Nenhum paciente encontrado</TableCell>
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-8">Nenhum paciente encontrado</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -382,6 +407,17 @@ export function PacientesPage() {
                   </Select>
                 </div>
               )}
+              <div className="space-y-2">
+                <Label>Linha terapêutica (opcional)</Label>
+                <Select onValueChange={(v) => setValue('linhaTerapeutica', v as LinhaTerapeutica)}>
+                  <SelectTrigger><SelectValue placeholder="Sem classificação" /></SelectTrigger>
+                  <SelectContent>
+                    {Object.values(LinhaTerapeutica).map((lt) => (
+                      <SelectItem key={lt} value={lt}>{LINHA_TERAPEUTICA_LABEL[lt]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="representante">Representante (quem indicou)</Label>
                 <Input

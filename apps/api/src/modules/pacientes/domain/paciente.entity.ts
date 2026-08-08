@@ -12,6 +12,16 @@ export enum ProjetoPaciente {
   PSI = 'PSI',
 }
 
+/** Abordagem terapêutica adotada com o paciente — orienta os campos
+ * específicos registrados em cada sessão (ver RegistroPsicologico). */
+export enum LinhaTerapeutica {
+  TCC = 'TCC',
+  PSICANALISE = 'PSICANALISE',
+  HUMANISTA = 'HUMANISTA',
+  GESTALT = 'GESTALT',
+  JUNGUIANA = 'JUNGUIANA',
+}
+
 export interface Endereco {
   logradouro?: string;
   numero?: string;
@@ -47,6 +57,7 @@ export interface Paciente {
   convenio?: Convenio;
   consentimentoLGPD?: ConsentimentoLGPD;
   projeto?: ProjetoPaciente;
+  linhaTerapeutica?: LinhaTerapeutica;
   /** Quem indicou/encaminhou o paciente. Texto livre, não criptografado — precisa ser filtrável/agregável. */
   representante?: string;
   observacoes?: string;

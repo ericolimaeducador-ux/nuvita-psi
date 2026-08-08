@@ -14,6 +14,10 @@ import { TelemedicinaPage } from '@/pages/TelemedicinaPage';
 import { AtendimentoTelemedicinaPage } from '@/pages/AtendimentoTelemedicinaPage';
 import { ClinicaPage } from '@/pages/ClinicaPage';
 import { ProntuarioImpressaoPage } from '@/pages/ProntuarioImpressaoPage';
+import { AtestadoComparecimentoPage } from '@/pages/AtestadoComparecimentoPage';
+import { LaudoPsicoterapicoPage } from '@/pages/LaudoPsicoterapicoPage';
+import { EncaminhamentoPage } from '@/pages/EncaminhamentoPage';
+import { PrescricaoCuidadosPage } from '@/pages/PrescricaoCuidadosPage';
 import { AtendimentoPsicologicoPage } from '@/pages/AtendimentoPsicologicoPage';
 import { SuperAdminPage } from '@/pages/SuperAdminPage';
 import { RelatoriosGerenciaisPage } from '@/pages/RelatoriosGerenciaisPage';
@@ -34,6 +38,10 @@ export function AppRoutes() {
             (sem sidebar/header do site) tanto na tela quanto no print/PDF. */}
         <Route element={<ProtectedRoute modulo={Modulo.PACIENTES} />}>
           <Route path="/pacientes/:id/prontuario/:prontuarioId/imprimir" element={<ProntuarioImpressaoPage />} />
+          <Route path="/pacientes/:id/documentos/atestado" element={<AtestadoComparecimentoPage />} />
+          <Route path="/pacientes/:id/documentos/laudo" element={<LaudoPsicoterapicoPage />} />
+          <Route path="/pacientes/:id/documentos/encaminhamento" element={<EncaminhamentoPage />} />
+          <Route path="/pacientes/:id/documentos/prescricao" element={<PrescricaoCuidadosPage />} />
         </Route>
         <Route element={<AppLayout />}>
           {/* /dashboard fica sem gate: é o destino dos redirects e todo papel o tem por padrão. */}

@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { ProjetoPaciente, Sexo } from '../../domain/paciente.entity';
+import { LinhaTerapeutica, ProjetoPaciente, Sexo } from '../../domain/paciente.entity';
 
 export type PacienteDocument = HydratedDocument<PacienteMongo>;
 
@@ -55,6 +55,9 @@ export class PacienteMongo {
 
   @Prop({ enum: Object.values(ProjetoPaciente), index: true })
   projeto?: ProjetoPaciente;
+
+  @Prop({ enum: Object.values(LinhaTerapeutica), index: true })
+  linhaTerapeutica?: LinhaTerapeutica;
 
   // Quem indicou o paciente — não criptografado (mesmo racional de `projeto`)
   // para permitir filtro/agregação e autocomplete por valores já usados.

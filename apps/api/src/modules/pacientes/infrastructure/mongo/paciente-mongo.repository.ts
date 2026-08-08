@@ -51,6 +51,7 @@ export class PacienteMongoRepository implements PacienteRepository {
       convenio: this.encryptJsonOptional(input.convenio),
       consentimentoLGPD: input.consentimentoLGPD,
       projeto: input.projeto,
+      linhaTerapeutica: input.linhaTerapeutica,
       representante: input.representante,
       ativo: true,
     };
@@ -228,6 +229,7 @@ export class PacienteMongoRepository implements PacienteRepository {
     if (input.convenio !== undefined) update.convenio = this.encryptJsonOptional(input.convenio);
     if (input.consentimentoLGPD !== undefined) update.consentimentoLGPD = input.consentimentoLGPD;
     if (input.projeto !== undefined) update.projeto = input.projeto;
+    if (input.linhaTerapeutica !== undefined) update.linhaTerapeutica = input.linhaTerapeutica;
     if (input.representante !== undefined) update.representante = input.representante;
     if (input.observacoes !== undefined) update.observacoes = this.encryptOptional(input.observacoes);
 
@@ -267,6 +269,7 @@ export class PacienteMongoRepository implements PacienteRepository {
       consentimentoLGPD: object.consentimentoLGPD,
       observacoes: this.decryptOptional(object.observacoes),
       projeto: object.projeto,
+      linhaTerapeutica: object.linhaTerapeutica,
       representante: object.representante,
       ativo: object.ativo,
       criadoEm: object.criadoEm,
@@ -285,6 +288,7 @@ export class PacienteMongoRepository implements PacienteRepository {
   private listQuery(input: ListPacientesInput): Record<string, unknown> {
     const query = this.baseQuery(input.clinicaId, input.incluirInativos);
     if (input.projeto !== undefined) query.projeto = input.projeto;
+    if (input.linhaTerapeutica !== undefined) query.linhaTerapeutica = input.linhaTerapeutica;
     if (input.representante !== undefined) query.representante = input.representante;
     if (input.dataNascimento) {
       // Campo gravado como meia-noite UTC; intervalo de 24h cobre o dia inteiro.

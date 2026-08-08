@@ -53,6 +53,24 @@ export const PROJETO_LABEL: Record<ProjetoPaciente, string> = {
   [ProjetoPaciente.PSI]: 'Projeto PSI (Psicologia)',
 };
 
+/** Abordagem terapêutica adotada com o paciente — orienta os campos
+ * específicos registrados em cada sessão (ver RegistroPsicologico). */
+export enum LinhaTerapeutica {
+  TCC = 'TCC',
+  PSICANALISE = 'PSICANALISE',
+  HUMANISTA = 'HUMANISTA',
+  GESTALT = 'GESTALT',
+  JUNGUIANA = 'JUNGUIANA',
+}
+
+export const LINHA_TERAPEUTICA_LABEL: Record<LinhaTerapeutica, string> = {
+  [LinhaTerapeutica.TCC]: 'TCC (Terapia Cognitivo-Comportamental)',
+  [LinhaTerapeutica.PSICANALISE]: 'Psicanálise',
+  [LinhaTerapeutica.HUMANISTA]: 'Humanista (Centrada na Pessoa)',
+  [LinhaTerapeutica.GESTALT]: 'Gestalt-Terapia',
+  [LinhaTerapeutica.JUNGUIANA]: 'Psicologia Analítica (Junguiana)',
+};
+
 export enum StatusAgendamento {
   AGENDADO = 'agendado',
   CONFIRMADO = 'confirmado',
@@ -244,6 +262,7 @@ export interface Paciente {
   endereco?: Endereco;
   consentimentoLGPD?: ConsentimentoLGPD;
   projeto?: ProjetoPaciente;
+  linhaTerapeutica?: LinhaTerapeutica;
   representante?: string;
   observacoes?: string;
   ativo?: boolean;
@@ -359,6 +378,27 @@ export interface RegistroPsicologico {
   encaminhamentos?: string;
   anotacoesLivres?: string;
   crp?: string;
+
+  // Campos específicos por linha terapêutica (ver LinhaTerapeutica) —
+  // preenchidos condicionalmente conforme a classificação do paciente,
+  // ver apps/web/src/lib/linhaTerapeutica.ts (CAMPOS_POR_LINHA).
+  tccPensamentosAutomaticos?: string;
+  tccDistorcoesCognitivas?: string;
+  tccTarefaCasa?: string;
+  tccRegistroComportamental?: string;
+  psicanaliseAssociacaoLivre?: string;
+  psicanaliseConteudoOnirico?: string;
+  psicanaliseDinamicaTransferencial?: string;
+  psicanaliseRepeticoes?: string;
+  humanistaCongruencia?: string;
+  humanistaAutorrealizacao?: string;
+  humanistaAcolhimento?: string;
+  gestaltAwareness?: string;
+  gestaltFiguraFundo?: string;
+  gestaltContatoFronteira?: string;
+  junguianaSimbolosArquetipicos?: string;
+  junguianaMaterialOnirico?: string;
+  junguianaProcessoIndividuacao?: string;
 }
 
 /** Ordem/rótulos de exibição do registro psicológico — usado no histórico de
@@ -384,6 +424,23 @@ export const REGISTRO_PSICOLOGICO_CAMPOS: Array<[keyof RegistroPsicologico, stri
   ['encaminhamentos', 'Encaminhamentos'],
   ['anotacoesLivres', 'Anotações livres'],
   ['crp', 'CRP'],
+  ['tccPensamentosAutomaticos', 'Pensamentos automáticos identificados'],
+  ['tccDistorcoesCognitivas', 'Distorções cognitivas trabalhadas'],
+  ['tccTarefaCasa', 'Tarefa de casa (exercício comportamental)'],
+  ['tccRegistroComportamental', 'Registro de comportamento-alvo / frequência'],
+  ['psicanaliseAssociacaoLivre', 'Material de associação livre'],
+  ['psicanaliseConteudoOnirico', 'Conteúdo onírico relatado (sonhos)'],
+  ['psicanaliseDinamicaTransferencial', 'Dinâmica transferencial / contratransferencial'],
+  ['psicanaliseRepeticoes', 'Repetições / padrões significantes identificados'],
+  ['humanistaCongruencia', 'Congruência autopercebida pelo paciente'],
+  ['humanistaAutorrealizacao', 'Movimento em direção à autorrealização'],
+  ['humanistaAcolhimento', 'Registro de acolhimento incondicional / escuta ativa'],
+  ['gestaltAwareness', 'Awareness no aqui-e-agora'],
+  ['gestaltFiguraFundo', 'Figura-fundo (necessidade emergente)'],
+  ['gestaltContatoFronteira', 'Fronteira de contato / ajustamento criativo'],
+  ['junguianaSimbolosArquetipicos', 'Símbolos e conteúdos arquetípicos'],
+  ['junguianaMaterialOnirico', 'Material onírico (sonhos)'],
+  ['junguianaProcessoIndividuacao', 'Processo de individuação observado'],
 ];
 
 export interface Prontuario {

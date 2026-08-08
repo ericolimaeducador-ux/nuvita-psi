@@ -22,9 +22,10 @@ import { useAuth } from '@/auth/AuthContext';
 import { agendaApi, pacientesApi, prontuariosApi, psicoFinanceiroApi, telemedicinaApi } from '@/api/resources';
 import { apiErrorMessage } from '@/api/client';
 import { formatData, formatEndereco, linkDaSala, toItems } from '@/utils';
+import { CAMPOS_POR_LINHA } from '@/lib/linhaTerapeutica';
 import {
   Agendamento, ModalidadeAtendimento, Paciente, Papel, Prontuario, RegistroPsicologico,
-  REGISTRO_PSICOLOGICO_CAMPOS,
+  REGISTRO_PSICOLOGICO_CAMPOS, LINHA_TERAPEUTICA_LABEL,
   SalaTelemedicina, StatusAgendamento, StatusSala, STATUS_AGENDAMENTO_LABEL,
   TipoAgendamento, TipoAtendimento,
   TIPO_AGENDAMENTO_LABEL, TIPOS_POR_MODALIDADE, rotuloProximaSessao,
@@ -97,6 +98,31 @@ function ultimoValor(sessoes: Prontuario[], campo: keyof RegistroPsicologico): s
     if (typeof v === 'string' && v.trim()) return v;
   }
   return undefined;
+}
+
+/** Campos de sessão específicos da linha terapêutica do paciente (TCC,
+ * Psicanálise, Humanista, Gestalt, Junguiana) — só aparece quando o paciente
+ * tem uma linha terapêutica classificada no cadastro. */
+function CamposLinhaTerapeutica({
+  paciente, reg, set,
+}: { paciente?: Paciente; reg: RegistroPsicologico; set: (patch: Partial<RegistroPsicologico>) => void }) {
+  if (!paciente?.linhaTerapeutica) return null;
+  const campos = CAMPOS_POR_LINHA[paciente.linhaTerapeutica];
+  return (
+    <>
+      <SecaoTitulo>{LINHA_TERAPEUTICA_LABEL[paciente.linhaTerapeutica]} — campos específicos</SecaoTitulo>
+      {campos.map(({ key, label, placeholder }) => (
+        <CampoTexto
+          key={key}
+          label={label}
+          placeholder={placeholder}
+          value={reg[key] as string | undefined}
+          onChange={(v) => set({ [key]: v })}
+          minRows={2}
+        />
+      ))}
+    </>
+  );
 }
 
 function BlocoContexto({ label, valor }: { label: string; valor?: string }) {
@@ -324,6 +350,8 @@ function RegistroSessao({
               </div>
             )}
 
+            <CamposLinhaTerapeutica paciente={paciente} reg={reg} set={set} />
+
             <SecaoTitulo>Anotações da psicoterapia</SecaoTitulo>
             <AutoTextarea
               value={reg.anotacoesLivres}
@@ -384,6 +412,8 @@ function RegistroSessao({
             <CampoTexto label="Procedimento / técnica utilizada" value={reg.procedimentoTecnica} onChange={(v) => set({ procedimentoTecnica: v })} minRows={2} />
             <CampoTexto label="Evolução" value={reg.evolucao} onChange={(v) => set({ evolucao: v })} />
             <CampoTexto label="Encaminhamentos" value={reg.encaminhamentos} onChange={(v) => set({ encaminhamentos: v })} minRows={2} />
+
+            <CamposLinhaTerapeutica paciente={paciente} reg={reg} set={set} />
 
             <SecaoTitulo>Anotações livres da sessão</SecaoTitulo>
             <AutoTextarea
