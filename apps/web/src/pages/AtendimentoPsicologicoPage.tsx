@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { Brain, CalendarPlus, ClipboardList, Copy, History, Loader2, PenLine, User, Video, X } from 'lucide-react';
+import { Brain, CalendarPlus, ClipboardList, Copy, History, Loader2, PenLine, Sparkles, User, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +19,7 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import { SalaVideo } from '@/components/SalaVideo';
 import { useAuth } from '@/auth/AuthContext';
-import { agendaApi, pacientesApi, prontuariosApi, psicoFinanceiroApi, telemedicinaApi } from '@/api/resources';
+import { agendaApi, iaClinicaApi, pacientesApi, prontuariosApi, psicoFinanceiroApi, telemedicinaApi } from '@/api/resources';
 import { apiErrorMessage } from '@/api/client';
 import { formatData, formatEndereco, linkDaSala, toItems } from '@/utils';
 import { CAMPOS_POR_LINHA } from '@/lib/linhaTerapeutica';
@@ -218,6 +218,20 @@ function RegistroSessao({
     setEditandoContexto(true);
   }
 
+  const sugerirIaMut = useMutation({
+    mutationFn: () =>
+      iaClinicaApi.sugerirAbordagem({
+        linhaTerapeutica: paciente?.linhaTerapeutica,
+        motivoAtendimento: reg.motivoAtendimento,
+        diagnosticosSaudeMental: reg.diagnosticosSaudeMental,
+        avaliacaoRisco: reg.avaliacaoRisco,
+        evolucao: reg.evolucao,
+        anotacoesLivres: reg.anotacoesLivres,
+        numeroSessoesAnteriores: sessoes.length,
+      }),
+    onError: (e) => toast({ title: 'Erro ao sugerir abordagem', description: apiErrorMessage(e), variant: 'destructive' }),
+  });
+
   const salvarM = useMutation({
     mutationFn: async (assinar: boolean) => {
       const prontuario = await prontuariosApi.create({
@@ -294,6 +308,29 @@ function RegistroSessao({
           </>
         )}
       </div>
+
+      {/* Sugestão de abordagem via IA — apoio ao psicólogo, nunca decide por ele. */}
+      {!carregando && (
+        <div className="rounded-xl border border-dashed bg-muted/20 p-4 space-y-2 text-sm">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5" /> Sugestão de abordagem (IA)
+            </p>
+            <Button variant="outline" size="sm" onClick={() => sugerirIaMut.mutate()} disabled={sugerirIaMut.isPending}>
+              {sugerirIaMut.isPending ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+              {sugerirIaMut.data ? 'Gerar novamente' : 'Sugerir abordagem'}
+            </Button>
+          </div>
+          {sugerirIaMut.data && (
+            <p className="whitespace-pre-wrap text-foreground">{sugerirIaMut.data.sugestao}</p>
+          )}
+          {!sugerirIaMut.data && !sugerirIaMut.isPending && (
+            <p className="text-xs text-muted-foreground">
+              Gera uma sugestão de técnica/condução com base no que já foi preenchido nesta sessão e na linha terapêutica do paciente. Apoio, não substitui o julgamento clínico.
+            </p>
+          )}
+        </div>
+      )}
 
       {carregando ? (
           <div className="space-y-2 py-4">

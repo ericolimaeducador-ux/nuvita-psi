@@ -102,6 +102,10 @@ export interface AppConfig {
   kmsKeyRing: string;
   kmsKey: string;
 
+  // IA clínica (sugestão de abordagem + prescrição de exercícios)
+  anthropicApiKey?: string;
+  anthropicModel: string;
+
   // Logging
   logLevel: 'debug' | 'info' | 'warn' | 'error';
 }
@@ -164,6 +168,8 @@ export class AppConfigService {
         appRootDomain,
         bootstrapSecret,
         prontuarioSignatureSecret,
+        anthropicApiKey,
+        anthropicModel,
       ] = await Promise.all([
         this.getSecretOrThrow('mongodb-uri'),
         this.getSecretOrThrow('redis-url'),
@@ -191,6 +197,8 @@ export class AppConfigService {
         this.getSecretOrThrow('app-root-domain'),
         this.getSecretOrThrow('bootstrap-secret'),
         this.getSecretOrThrow('prontuario-signature-secret'),
+        this.getSecretOrDefault('anthropic-api-key', undefined),
+        this.getSecretOrDefault('anthropic-model', 'claude-sonnet-5'),
       ]);
 
       const config: AppConfig = {
@@ -231,6 +239,8 @@ export class AppConfigService {
         gcpProjectId: process.env.GCP_PROJECT_ID!,
         kmsKeyRing: process.env.KMS_KEY_RING || 'nuvita-psi-keyring',
         kmsKey: process.env.KMS_KEY || 'nuvita-psi-master-key',
+        anthropicApiKey,
+        anthropicModel: anthropicModel ?? 'claude-sonnet-5',
         logLevel: (process.env.LOG_LEVEL as AppConfig['logLevel']) || 'info',
       };
 
@@ -315,6 +325,8 @@ export class AppConfigService {
       gcpProjectId: process.env.GCP_PROJECT_ID || '',
       kmsKeyRing: process.env.KMS_KEY_RING || 'nuvita-psi-keyring',
       kmsKey: process.env.KMS_KEY || 'nuvita-psi-master-key',
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+      anthropicModel: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5',
       logLevel: (process.env.LOG_LEVEL as AppConfig['logLevel']) || 'debug',
     };
 

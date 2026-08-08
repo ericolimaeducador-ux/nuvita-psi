@@ -3,6 +3,7 @@ import type {
   Agendamento,
   Documento,
   Lancamento,
+  LinhaTerapeutica,
   ListUsuariosResult,
   LoginResponse,
   ModalidadeAtendimento,
@@ -276,6 +277,30 @@ export const testesPsicologicosApi = {
     api.post<TestePsicologico>('/testes-psicologicos', payload).then((r) => r.data),
   listByPaciente: (pacienteId: string) =>
     api.get<TestePsicologico[]>('/testes-psicologicos', { params: { pacienteId } }).then((r) => r.data),
+};
+
+// ---------- IA clínica (sugestão de abordagem + prescrição de exercícios) ----------
+export interface SugerirAbordagemPayload {
+  linhaTerapeutica?: LinhaTerapeutica;
+  motivoAtendimento?: string;
+  diagnosticosSaudeMental?: string;
+  avaliacaoRisco?: string;
+  evolucao?: string;
+  anotacoesLivres?: string;
+  numeroSessoesAnteriores?: number;
+}
+
+export interface GerarPrescricaoPayload {
+  linhaTerapeutica?: LinhaTerapeutica;
+  contextoClinico?: string;
+  checklistSelecionado?: string[];
+}
+
+export const iaClinicaApi = {
+  sugerirAbordagem: (payload: SugerirAbordagemPayload) =>
+    api.post<{ sugestao: string }>('/ia-clinica/sugerir-abordagem', payload).then((r) => r.data),
+  gerarPrescricao: (payload: GerarPrescricaoPayload) =>
+    api.post<{ prescricao: string }>('/ia-clinica/gerar-prescricao', payload).then((r) => r.data),
 };
 
 // ---------- Super Admin ----------

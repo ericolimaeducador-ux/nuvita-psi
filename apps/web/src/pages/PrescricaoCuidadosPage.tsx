@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,8 +12,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/PageHeader';
 import { DocumentoClinicoLayout } from '@/components/DocumentoClinicoLayout';
+import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/auth/AuthContext';
-import { pacientesApi } from '@/api/resources';
+import { pacientesApi, iaClinicaApi } from '@/api/resources';
+import { apiErrorMessage } from '@/api/client';
 import { SUGESTOES_CUIDADOS_POR_LINHA } from '@/lib/linhaTerapeutica';
 import { LINHA_TERAPEUTICA_LABEL } from '@/types';
 
@@ -52,6 +54,17 @@ export function PrescricaoCuidadosPage() {
   function adicionarSugestao(sugestao: string) {
     setTextoLivre((cur) => (cur.includes(sugestao) ? cur : cur ? `${cur}\n- ${sugestao}` : `- ${sugestao}`));
   }
+
+  const gerarIaMut = useMutation({
+    mutationFn: () =>
+      iaClinicaApi.gerarPrescricao({
+        linhaTerapeutica: paciente?.linhaTerapeutica,
+        checklistSelecionado: checklist.length ? checklist : undefined,
+        contextoClinico: textoLivre.trim() || undefined,
+      }),
+    onSuccess: (r) => setTextoLivre((cur) => (cur.trim() ? `${cur}\n\n${r.prescricao}` : r.prescricao)),
+    onError: (e) => toast.error('Erro ao gerar com IA', apiErrorMessage(e)),
+  });
 
   if (modo === 'imprimir') {
     return (
@@ -129,11 +142,27 @@ export function PrescricaoCuidadosPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="textoLivre">Orientações adicionais</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="textoLivre">Orientações adicionais</Label>
+                <Button
+                  type="button" size="sm" variant="outline"
+                  onClick={() => gerarIaMut.mutate()} disabled={gerarIaMut.isPending}
+                >
+                  {gerarIaMut.isPending ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  Gerar com IA
+                </Button>
+              </div>
               <Textarea
                 id="textoLivre" rows={8} value={textoLivre} onChange={(e) => setTextoLivre(e.target.value)}
-                placeholder="Clique nas sugestões acima para adicionar, ou escreva livremente."
+                placeholder="Clique nas sugestões acima para adicionar, escreva livremente, ou gere um rascunho com IA."
               />
+              <p className="text-xs text-muted-foreground">
+                A sugestão da IA é um rascunho — revise antes de imprimir.
+              </p>
             </div>
 
             <Button onClick={() => setModo('imprimir')} disabled={checklist.length === 0 && !textoLivre.trim()}>
