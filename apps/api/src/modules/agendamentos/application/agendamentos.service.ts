@@ -36,7 +36,7 @@ export class AgendamentosService {
       clinicaId,
       pacienteId: dto.pacienteId,
       medicoId: dto.medicoId,
-      modalidade: dto.modalidade ?? ModalidadeAtendimento.MEDICO,
+      modalidade: dto.modalidade ?? ModalidadeAtendimento.PSICOLOGIA,
       dataHoraInicio: new Date(dto.dataHoraInicio),
       dataHoraFim: new Date(dto.dataHoraFim),
       tipo: dto.tipo,

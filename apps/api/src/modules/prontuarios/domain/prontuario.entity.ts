@@ -1,8 +1,4 @@
 export enum TipoAtendimento {
-  CONSULTA = 'consulta',
-  RETORNO = 'retorno',
-  URGENCIA = 'urgencia',
-  TELECONSULTA = 'teleconsulta',
   PSICOTERAPIA = 'psicoterapia',
 }
 

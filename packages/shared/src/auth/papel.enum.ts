@@ -1,7 +1,6 @@
 export enum Papel {
   SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
-  MEDICO = 'MEDICO',
   PSICOLOGO = 'PSICOLOGO',
   SECRETARIA = 'SECRETARIA',
   PACIENTE = 'PACIENTE',
@@ -12,14 +11,12 @@ export enum Papel {
  * Usado para autorizacao em agenda, prontuario e telemedicina.
  */
 export const PAPEIS_PROFISSIONAIS = [
-  Papel.MEDICO,
   Papel.PSICOLOGO,
 ] as const;
 
 export const PAPEIS_COM_2FA_OBRIGATORIO = [
   Papel.SUPER_ADMIN,
   Papel.ADMIN,
-  Papel.MEDICO,
   Papel.PSICOLOGO,
 ] as const;
 

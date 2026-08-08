@@ -16,7 +16,7 @@ import { useAuth } from '@/auth/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { Papel, PAPEL_LABEL } from '@/types';
 
-const PAPEIS_CRIAVEIS = [Papel.MEDICO, Papel.SECRETARIA];
+const PAPEIS_CRIAVEIS = [Papel.PSICOLOGO, Papel.SECRETARIA];
 
 const usuarioSchema = z.object({
   nome: z.string().min(1, 'Informe o nome.'),
@@ -31,7 +31,7 @@ export function ClinicaPage() {
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<UsuarioForm>({
     resolver: zodResolver(usuarioSchema),
-    defaultValues: { papel: Papel.MEDICO },
+    defaultValues: { papel: Papel.PSICOLOGO },
   });
 
   const mut = useMutation({
@@ -57,8 +57,8 @@ export function ClinicaPage() {
         <div>
           <p className="text-sm font-medium text-foreground">Novo usuário da clínica</p>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Crie médicos, enfermeiros ou secretaria. Profissionais (médico e enfermeiro)
-            recebem 2FA obrigatório no primeiro acesso. Disponível apenas para ADMIN.
+            Crie psicólogos ou secretaria. Psicólogos recebem 2FA obrigatório
+            no primeiro acesso. Disponível apenas para ADMIN.
           </p>
         </div>
       </div>
@@ -74,7 +74,7 @@ export function ClinicaPage() {
               </div>
               <div className="space-y-2">
                 <Label>Perfil</Label>
-                <Select defaultValue={Papel.MEDICO} onValueChange={(v) => setValue('papel', v as Papel)}>
+                <Select defaultValue={Papel.PSICOLOGO} onValueChange={(v) => setValue('papel', v as Papel)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PAPEIS_CRIAVEIS.map((p) => <SelectItem key={p} value={p}>{PAPEL_LABEL[p]}</SelectItem>)}

@@ -17,7 +17,7 @@ describe('ProntuariosService', () => {
     pacienteId: 'paciente-1',
     medicoId: 'medico-1',
     dataAtendimento: new Date('2026-01-01T12:00:00.000Z'),
-    tipo: TipoAtendimento.CONSULTA,
+    tipo: TipoAtendimento.PSICOTERAPIA,
     subjetivo: { queixaPrincipal: 'Dor' },
     objetivo: {},
     avaliacao: {},
@@ -33,7 +33,7 @@ describe('ProntuariosService', () => {
     user: {
       sub: 'medico-1',
       email: 'medico@nuvita.test',
-      papel: Papel.MEDICO,
+      papel: Papel.PSICOLOGO,
       clinicaId: 'clinica-1',
       jti: 'jti',
       typ: 'access' as const,

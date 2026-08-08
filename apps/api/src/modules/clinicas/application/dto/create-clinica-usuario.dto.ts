@@ -12,6 +12,6 @@ export class CreateClinicaUsuarioDto {
   @MinLength(10)
   password!: string;
 
-  @IsIn([Papel.MEDICO, Papel.SECRETARIA])
-  papel!: Papel.MEDICO | Papel.SECRETARIA;
+  @IsIn([Papel.PSICOLOGO, Papel.SECRETARIA])
+  papel!: Papel.PSICOLOGO | Papel.SECRETARIA;
 }

@@ -11,12 +11,6 @@ export enum StatusAgendamento {
 }
 
 export enum TipoAgendamento {
-  CONSULTA = 'consulta',
-  RETORNO = 'retorno',
-  EXAME = 'exame',
-  PROCEDIMENTO = 'procedimento',
-  TELECONSULTA = 'teleconsulta',
-  // Psicologia
   AVALIACAO_PSICOLOGICA = 'avaliacao_psicologica',
   SESSAO_PSICOTERAPIA = 'sessao_psicoterapia',
 }

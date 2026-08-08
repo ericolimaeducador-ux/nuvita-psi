@@ -3,7 +3,6 @@
 export enum Papel {
   SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
-  MEDICO = 'MEDICO',
   PSICOLOGO = 'PSICOLOGO',
   SECRETARIA = 'SECRETARIA',
   PACIENTE = 'PACIENTE',
@@ -12,7 +11,6 @@ export enum Papel {
 export const PAPEL_LABEL: Record<Papel, string> = {
   [Papel.SUPER_ADMIN]: 'Super Admin',
   [Papel.ADMIN]: 'Administrador',
-  [Papel.MEDICO]: 'Médico(a)',
   [Papel.PSICOLOGO]: 'Psicólogo(a)',
   [Papel.SECRETARIA]: 'Secretaria',
   [Papel.PACIENTE]: 'Paciente',
@@ -20,17 +18,14 @@ export const PAPEL_LABEL: Record<Papel, string> = {
 
 // Papéis profissionais que prestam atendimento (paridade de permissões clínicas).
 export const PAPEIS_PROFISSIONAIS: Papel[] = [
-  Papel.MEDICO,
   Papel.PSICOLOGO,
 ];
 
 export enum ModalidadeAtendimento {
-  MEDICO = 'medico',
   PSICOLOGIA = 'psicologia',
 }
 
 export const MODALIDADE_LABEL: Record<ModalidadeAtendimento, string> = {
-  [ModalidadeAtendimento.MEDICO]: 'Médico',
   [ModalidadeAtendimento.PSICOLOGIA]: 'Psicologia',
 };
 
@@ -83,34 +78,17 @@ export const STATUS_AGENDAMENTO_COLOR: Record<StatusAgendamento, string> = {
 };
 
 export enum TipoAgendamento {
-  CONSULTA = 'consulta',
-  RETORNO = 'retorno',
-  EXAME = 'exame',
-  PROCEDIMENTO = 'procedimento',
-  TELECONSULTA = 'teleconsulta',
   AVALIACAO_PSICOLOGICA = 'avaliacao_psicologica',
   SESSAO_PSICOTERAPIA = 'sessao_psicoterapia',
 }
 
 export const TIPO_AGENDAMENTO_LABEL: Record<TipoAgendamento, string> = {
-  [TipoAgendamento.CONSULTA]: 'Consulta',
-  [TipoAgendamento.RETORNO]: 'Retorno',
-  [TipoAgendamento.EXAME]: 'Exame',
-  [TipoAgendamento.PROCEDIMENTO]: 'Procedimento',
-  [TipoAgendamento.TELECONSULTA]: 'Teleconsulta',
   [TipoAgendamento.AVALIACAO_PSICOLOGICA]: 'Avaliação Psicológica',
   [TipoAgendamento.SESSAO_PSICOTERAPIA]: 'Sessão de Psicoterapia',
 };
 
 // Tipos de agendamento sugeridos por modalidade (para filtrar o formulário).
 export const TIPOS_POR_MODALIDADE: Record<ModalidadeAtendimento, TipoAgendamento[]> = {
-  [ModalidadeAtendimento.MEDICO]: [
-    TipoAgendamento.CONSULTA,
-    TipoAgendamento.RETORNO,
-    TipoAgendamento.EXAME,
-    TipoAgendamento.PROCEDIMENTO,
-    TipoAgendamento.TELECONSULTA,
-  ],
   [ModalidadeAtendimento.PSICOLOGIA]: [
     TipoAgendamento.AVALIACAO_PSICOLOGICA,
     TipoAgendamento.SESSAO_PSICOTERAPIA,
@@ -118,29 +96,16 @@ export const TIPOS_POR_MODALIDADE: Record<ModalidadeAtendimento, TipoAgendamento
 };
 
 export enum TipoAtendimento {
-  CONSULTA = 'consulta',
-  RETORNO = 'retorno',
-  URGENCIA = 'urgencia',
-  TELECONSULTA = 'teleconsulta',
   PSICOTERAPIA = 'psicoterapia',
 }
 
 export const TIPO_ATENDIMENTO_LABEL: Record<TipoAtendimento, string> = {
-  [TipoAtendimento.CONSULTA]: 'Consulta',
-  [TipoAtendimento.RETORNO]: 'Retorno',
-  [TipoAtendimento.URGENCIA]: 'Urgência',
-  [TipoAtendimento.TELECONSULTA]: 'Teleconsulta',
   [TipoAtendimento.PSICOTERAPIA]: 'Atendimento Psicológico',
 };
 
-/** Mapeia o tipo de agendamento para o tipo de atendimento (prontuário) mais
- * próximo, usado para pré-preencher "Iniciar atendimento" a partir da agenda. */
+/** Mapeia o tipo de agendamento para o tipo de atendimento (prontuário)
+ * correspondente. */
 export const TIPO_ATENDIMENTO_POR_AGENDAMENTO: Partial<Record<TipoAgendamento, TipoAtendimento>> = {
-  [TipoAgendamento.CONSULTA]: TipoAtendimento.CONSULTA,
-  [TipoAgendamento.RETORNO]: TipoAtendimento.RETORNO,
-  [TipoAgendamento.EXAME]: TipoAtendimento.CONSULTA,
-  [TipoAgendamento.PROCEDIMENTO]: TipoAtendimento.CONSULTA,
-  [TipoAgendamento.TELECONSULTA]: TipoAtendimento.TELECONSULTA,
   [TipoAgendamento.AVALIACAO_PSICOLOGICA]: TipoAtendimento.PSICOTERAPIA,
   [TipoAgendamento.SESSAO_PSICOTERAPIA]: TipoAtendimento.PSICOTERAPIA,
 };
@@ -187,10 +152,6 @@ export const PERMISSOES_PADRAO_POR_PAPEL: Record<Papel, Modulo[]> = {
   [Papel.ADMIN]: [
     M.DASHBOARD, M.PACIENTES, M.AGENDA, M.PRONTUARIOS, M.DOCUMENTOS,
     M.NOTIFICACOES, M.TELEMEDICINA, M.ANALYTICS, M.CLINICA,
-  ],
-  [Papel.MEDICO]: [
-    M.DASHBOARD, M.PACIENTES, M.AGENDA, M.PRONTUARIOS, M.DOCUMENTOS, M.TELEMEDICINA,
-    M.ANALYTICS,
   ],
   // Atendimento psicológico é um extra: só o psicólogo enxerga por padrão;
   // outros usuários ganham por concessão individual no painel super-admin.
@@ -240,7 +201,6 @@ export interface AuthUser {
 
 /** Rótulo do registro profissional conforme o papel (CRM/COREN/OAB). */
 export const REGISTRO_LABEL: Partial<Record<Papel, string>> = {
-  [Papel.MEDICO]: 'CRM',
   [Papel.PSICOLOGO]: 'CRP',
 };
 export function registroLabel(papel?: Papel): string {

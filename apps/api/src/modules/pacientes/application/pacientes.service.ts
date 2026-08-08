@@ -245,20 +245,19 @@ export class PacientesService {
   }
 
   /**
-   * Pacientes do Projeto PSI (atendimento psicológico) ficam isolados: só o
-   * PSICOLOGO os enxerga (o filtro de projeto solicitado é irrelevante para
-   * ele). Demais papéis têm filtro livre por qualquer projeto.
+   * Nuvita-psi é um produto de uma especialidade só (psicologia) — todo
+   * paciente da clínica é visível a qualquer profissional/secretaria/admin.
+   * `projeto` continua existindo como classificação opcional (filtro livre
+   * quando informado na busca), sem restringir visibilidade por papel.
    */
   private resolveVisibilidadeProjeto(
-    papel: Papel,
+    _papel: Papel,
     projetoSolicitado?: ProjetoPaciente,
   ): { projeto?: ProjetoPaciente } {
-    if (papel === Papel.PSICOLOGO) return { projeto: ProjetoPaciente.PSI };
     return { projeto: projetoSolicitado };
   }
 
-  private podeVerPaciente(papel: Papel, projetoPaciente?: ProjetoPaciente): boolean {
-    if (papel === Papel.PSICOLOGO) return projetoPaciente === ProjetoPaciente.PSI;
+  private podeVerPaciente(_papel: Papel, _projetoPaciente?: ProjetoPaciente): boolean {
     return true;
   }
 

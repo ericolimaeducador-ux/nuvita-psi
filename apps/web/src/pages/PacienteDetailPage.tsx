@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +10,7 @@ import {
   CalendarClock, ChevronDown, Stethoscope,
   Trash2, Pencil,
 } from 'lucide-react';
-import { ProntuarioDetailDialog, NovoAtendimentoDialog } from '@/components/ProntuarioDialogs';
+import { ProntuarioDetailDialog } from '@/components/ProntuarioDialogs';
 import { NovoDocumentoDialog } from '@/components/NovoDocumentoDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ import { formatCpf, formatData, idade, toItems, formatEndereco } from '@/utils';
 import {
   Sexo, SEXO_LABEL, ProjetoPaciente, PROJETO_LABEL, STATUS_AGENDAMENTO_LABEL, TIPO_ATENDIMENTO_LABEL,
   Papel, TIPO_DOCUMENTO_LABEL,
-  StatusAgendamento, TipoAtendimento, TIPO_ATENDIMENTO_POR_AGENDAMENTO,
+  StatusAgendamento,
   type Agendamento, type Prontuario, type Documento, type Paciente,
 } from '@/types';
 
@@ -80,44 +80,12 @@ function Vazio({ children }: { children: React.ReactNode }) {
 export function PacienteDetailPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const qc = useQueryClient();
   const { user } = useAuth();
   // Psicólogo atende fora do fluxo clínico da Mais Quali Vida: só enxerga
   // dados cadastrais, os próprios atendimentos (psicoterapia) e documentos.
   const ehPsicologo = user?.papel === Papel.PSICOLOGO;
   const [viewProntuarioId, setViewProntuarioId] = useState<string | null>(null);
-  const [novoOpen, setNovoOpen] = useState(false);
-  const [atendimentoPrefill, setAtendimentoPrefill] = useState<{
-    agendamentoId: string; tipo: TipoAtendimento; data: string;
-  } | null>(null);
-
-  function iniciarAtendimentoDeAgendamento(a: Agendamento) {
-    const tipo = TIPO_ATENDIMENTO_POR_AGENDAMENTO[a.tipo];
-    if (!tipo) return;
-    setAtendimentoPrefill({
-      agendamentoId: a.id,
-      tipo,
-      data: dayjs(a.dataHoraInicio).format('YYYY-MM-DDTHH:mm'),
-    });
-    setNovoOpen(true);
-  }
-
-  // "Iniciar atendimento" clicado a partir da Agenda: chega aqui via router state.
-  // Abre o formulário já preenchido e limpa o state pra não reabrir num refresh/voltar.
-  useEffect(() => {
-    const vindoDaAgenda = (location.state as { iniciarAgendamento?: { agendamentoId: string; tipo: TipoAtendimento; data: string } } | null)?.iniciarAgendamento;
-    if (!vindoDaAgenda) return;
-    setAtendimentoPrefill({
-      agendamentoId: vindoDaAgenda.agendamentoId,
-      tipo: vindoDaAgenda.tipo,
-      data: dayjs(vindoDaAgenda.data).format('YYYY-MM-DDTHH:mm'),
-    });
-    setNovoOpen(true);
-    navigate(location.pathname, { replace: true, state: null });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]);
-
   const [novoDocOpen, setNovoDocOpen] = useState(false);
   const [docParaExcluir, setDocParaExcluir] = useState<Documento | null>(null);
 
@@ -136,7 +104,7 @@ export function PacienteDetailPage() {
   });
   // Export LGPD: mesmos papéis autorizados no backend (GET /pacientes/:id/export).
   const podeExportar =
-    user?.papel === Papel.SECRETARIA || user?.papel === Papel.MEDICO || user?.papel === Papel.ADMIN;
+    user?.papel === Papel.SECRETARIA || user?.papel === Papel.PSICOLOGO || user?.papel === Papel.ADMIN;
 
   // Direito de acesso/portabilidade (LGPD): baixa um JSON com todos os dados do
   // paciente. Antes o botão só disparava o GET e descartava a resposta (nada
@@ -334,26 +302,14 @@ export function PacienteDetailPage() {
             <Vazio>Nenhum agendamento.</Vazio>
           ) : (
             <Table>
-              <TableHeader><TableRow><TableHead>Início</TableHead><TableHead>Status</TableHead><TableHead className="w-40" /></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Início</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
               <TableBody>
-                {toItems<Agendamento>(agendaQ.data as never).map((a) => {
-                  const podeIniciar =
-                    (a.status === StatusAgendamento.AGENDADO || a.status === StatusAgendamento.CONFIRMADO) &&
-                    !!TIPO_ATENDIMENTO_POR_AGENDAMENTO[a.tipo];
-                  return (
-                    <TableRow key={a.id}>
-                      <TableCell>{dayjs(a.dataHoraInicio).format('DD/MM/YYYY HH:mm')}</TableCell>
-                      <TableCell><Badge>{STATUS_AGENDAMENTO_LABEL[a.status] ?? a.status}</Badge></TableCell>
-                      <TableCell className="text-right">
-                        {podeIniciar && (
-                          <Button variant="ghost" size="sm" onClick={() => iniciarAtendimentoDeAgendamento(a)}>
-                            Iniciar atendimento
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {toItems<Agendamento>(agendaQ.data as never).map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell>{dayjs(a.dataHoraInicio).format('DD/MM/YYYY HH:mm')}</TableCell>
+                    <TableCell><Badge>{STATUS_AGENDAMENTO_LABEL[a.status] ?? a.status}</Badge></TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}
@@ -365,15 +321,6 @@ export function PacienteDetailPage() {
         pacienteId={id}
         open={!!viewProntuarioId}
         onOpenChange={(o) => { if (!o) setViewProntuarioId(null); }}
-      />
-      <NovoAtendimentoDialog
-        pacienteId={id}
-        pacienteNome={p.nome}
-        open={novoOpen}
-        onOpenChange={(o) => { setNovoOpen(o); if (!o) setAtendimentoPrefill(null); }}
-        agendamentoId={atendimentoPrefill?.agendamentoId}
-        initialTipo={atendimentoPrefill?.tipo}
-        initialData={atendimentoPrefill?.data}
       />
       <NovoDocumentoDialog
         pacienteId={id}

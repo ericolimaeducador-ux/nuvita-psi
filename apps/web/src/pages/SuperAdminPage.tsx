@@ -32,7 +32,6 @@ import type { UsuarioAdmin } from '@/types';
 const PAPEL_BADGE: Record<Papel, string> = {
   [Papel.SUPER_ADMIN]: 'bg-purple-500/10 text-purple-600 border border-purple-500/20',
   [Papel.ADMIN]: 'bg-blue-500/10 text-blue-600 border border-blue-500/20',
-  [Papel.MEDICO]: 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20',
   [Papel.PSICOLOGO]: 'bg-rose-500/10 text-rose-600 border border-rose-500/20',
   [Papel.SECRETARIA]: 'bg-slate-500/10 text-slate-600 border border-slate-500/20',
   [Papel.PACIENTE]: 'bg-gray-500/10 text-gray-400 border border-gray-500/20',
@@ -84,7 +83,7 @@ const PLANO_LABEL: Record<ClinicaAdmin['plano'], string> = {
 const SEM_CLINICA = 'none';
 
 // Espelha PAPEIS_COM_2FA_OBRIGATORIO do backend (packages/shared/src/auth).
-const PAPEIS_2FA: Papel[] = [Papel.SUPER_ADMIN, Papel.ADMIN, Papel.MEDICO, Papel.PSICOLOGO];
+const PAPEIS_2FA: Papel[] = [Papel.SUPER_ADMIN, Papel.ADMIN, Papel.PSICOLOGO];
 
 // ---- Component --------------------------------------------------------------
 export function SuperAdminPage() {

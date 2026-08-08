@@ -47,13 +47,6 @@ export const PERMISSOES_PADRAO_POR_PAPEL: Record<Papel, Modulo[]> = {
     M.DASHBOARD, M.PACIENTES, M.AGENDA, M.PRONTUARIOS, M.DOCUMENTOS,
     M.NOTIFICACOES, M.TELEMEDICINA, M.ANALYTICS, M.CLINICA,
   ],
-  [Papel.MEDICO]: [
-    M.DASHBOARD, M.PACIENTES, M.AGENDA, M.PRONTUARIOS, M.DOCUMENTOS, M.TELEMEDICINA,
-    M.ANALYTICS,
-  ],
-  // Atendimento psicológico é um extra do sistema: só o psicólogo enxerga o
-  // módulo por padrão; para outros usuários (ex.: admin da clínica demo) a
-  // liberação é feita por concessão individual no painel super-admin.
   // O financeiro da psicologia é o único financeiro do produto — é o caixa
   // do próprio psicólogo (autônomo), por ciclo de sessões.
   [Papel.PSICOLOGO]: [
