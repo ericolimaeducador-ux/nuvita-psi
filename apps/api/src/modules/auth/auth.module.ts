@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
-import { AUDIT_LOG_REPOSITORY, USER_REPOSITORY } from './auth.constants';
+import { AUDIT_LOG_REPOSITORY, REDIS_CLIENT, USER_REPOSITORY } from './auth.constants';
 import { AuthService } from './application/auth.service';
 import { AuditLogMongoRepository } from './infrastructure/mongo/audit-log-mongo.repository';
 import { AuditLogMongo, AuditLogSchema } from './infrastructure/mongo/audit-log.schema';
@@ -41,6 +41,8 @@ import { SuperAdminGuard } from './presentation/guards/super-admin.guard';
     { provide: USER_REPOSITORY, useClass: UserMongoRepository },
     { provide: AUDIT_LOG_REPOSITORY, useClass: AuditLogMongoRepository },
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, SuperAdminGuard, USER_REPOSITORY],
+  // REDIS_CLIENT é exportado para o HealthModule checar a MESMA conexão que a
+  // autenticação usa (ver modules/health/redis.health.ts).
+  exports: [AuthService, JwtAuthGuard, RolesGuard, SuperAdminGuard, USER_REPOSITORY, REDIS_CLIENT],
 })
 export class AuthModule {}
