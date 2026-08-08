@@ -28,6 +28,7 @@ import { useAuth } from '@/auth/AuthContext';
 import {
   pacientesApi, prontuariosApi, agendaApi, documentosApi,
   observacoesPacienteApi, testesPsicologicosApi,
+  type TestePsicologico,
 } from '@/api/resources';
 import { apiErrorMessage } from '@/api/client';
 import { formatCpf, formatData, idade, toItems, formatEndereco } from '@/utils';
@@ -757,7 +758,7 @@ function TestesPsicologicosSecao({ pacienteId }: { pacienteId: string }) {
     onError: (e) => toast.error('Erro', apiErrorMessage(e)),
   });
 
-  const testes = listQ.data ?? [];
+  const testes = toItems<TestePsicologico>(listQ.data as never);
 
   return (
     <Secao
