@@ -8,7 +8,7 @@ import dayjs from 'dayjs';
 import {
   ArrowLeft, User, Download, Plus, FileText,
   CalendarClock, ChevronDown, Stethoscope,
-  Trash2, Pencil, FileSignature,
+  Trash2, Pencil, FileSignature, ClipboardCheck,
 } from 'lucide-react';
 import { ProntuarioDetailDialog } from '@/components/ProntuarioDialogs';
 import { NovoDocumentoDialog } from '@/components/NovoDocumentoDialog';
@@ -27,7 +27,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/auth/AuthContext';
 import {
   pacientesApi, prontuariosApi, agendaApi, documentosApi,
-  observacoesPacienteApi,
+  observacoesPacienteApi, testesPsicologicosApi,
 } from '@/api/resources';
 import { apiErrorMessage } from '@/api/client';
 import { formatCpf, formatData, idade, toItems, formatEndereco } from '@/utils';
@@ -260,6 +260,10 @@ export function PacienteDetailPage() {
           </div>
         </Secao>
       )}
+
+      {/* Testes psicológicos — placeholder: sem catálogo de testes ainda,
+          nome do teste é texto livre. Estrutura pronta pra receber conteúdo depois. */}
+      {ehPsicologo && <TestesPsicologicosSecao pacienteId={id} />}
 
       {/* Observações gerais — campo livre p/ qualquer profissional de atendimento (fora do escopo do psicólogo) */}
       {!ehPsicologo && <ObservacoesSecao pacienteId={id} observacoesAtuais={p.observacoes} />}
@@ -713,6 +717,124 @@ function ObservacoesSecao({ pacienteId, observacoesAtuais }: { pacienteId: strin
           </div>
         )}
       </div>
+    </Secao>
+  );
+}
+
+/**
+ * Testes psicológicos aplicados ao paciente — placeholder sem catálogo de
+ * testes ainda (nome do teste é texto livre); a estrutura de dados e o
+ * endpoint já estão prontos para receber um catálogo padronizado depois.
+ */
+function TestesPsicologicosSecao({ pacienteId }: { pacienteId: string }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [nomeTeste, setNomeTeste] = useState('');
+  const [dataAplicacao, setDataAplicacao] = useState(() => dayjs().format('YYYY-MM-DD'));
+  const [resultado, setResultado] = useState('');
+
+  const listQ = useQuery({
+    queryKey: ['testes-psicologicos', pacienteId],
+    queryFn: () => testesPsicologicosApi.listByPaciente(pacienteId),
+  });
+
+  const createMut = useMutation({
+    mutationFn: () =>
+      testesPsicologicosApi.create({
+        pacienteId,
+        nomeTeste: nomeTeste.trim(),
+        dataAplicacao: dayjs(dataAplicacao).toISOString(),
+        resultado: resultado.trim() || undefined,
+      }),
+    onSuccess: () => {
+      toast.success('Teste registrado.');
+      setOpen(false);
+      setNomeTeste('');
+      setDataAplicacao(dayjs().format('YYYY-MM-DD'));
+      setResultado('');
+      void qc.invalidateQueries({ queryKey: ['testes-psicologicos', pacienteId] });
+    },
+    onError: (e) => toast.error('Erro', apiErrorMessage(e)),
+  });
+
+  const testes = listQ.data ?? [];
+
+  return (
+    <Secao
+      icon={<ClipboardCheck className="h-4 w-4" />}
+      titulo="Testes Psicológicos"
+      contagem={testes.length}
+      defaultOpen={false}
+      acao={
+        <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Aplicar teste
+        </Button>
+      }
+    >
+      {listQ.isLoading ? (
+        <Skeleton className="h-16 w-full" />
+      ) : testes.length === 0 ? (
+        <Vazio>Nenhum teste aplicado ainda.</Vazio>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Teste</TableHead>
+              <TableHead>Resultado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {testes.map((t) => (
+              <TableRow key={t.id}>
+                <TableCell>{dayjs(t.dataAplicacao).format('DD/MM/YYYY')}</TableCell>
+                <TableCell className="font-medium">{t.nomeTeste}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{t.resultado || '—'}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Aplicar teste psicológico</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nomeTeste">Nome do teste</Label>
+              <Input
+                id="nomeTeste" placeholder="Ex.: BDI-II, BAI, WAIS-III…"
+                value={nomeTeste} onChange={(e) => setNomeTeste(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dataAplicacaoTeste">Data de aplicação</Label>
+              <Input
+                id="dataAplicacaoTeste" type="date"
+                value={dataAplicacao} onChange={(e) => setDataAplicacao(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="resultadoTeste">Resultado (opcional)</Label>
+              <Textarea
+                id="resultadoTeste" rows={4} placeholder="Escore, interpretação, observações…"
+                value={resultado} onChange={(e) => setResultado(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => createMut.mutate()}
+              disabled={!nomeTeste.trim() || !dataAplicacao || createMut.isPending}
+            >
+              {createMut.isPending ? 'Salvando…' : 'Registrar teste'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Secao>
   );
 }

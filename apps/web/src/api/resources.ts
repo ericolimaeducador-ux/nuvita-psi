@@ -259,6 +259,25 @@ export const observacoesPacienteApi = {
     api.get<ObservacaoPaciente[]>('/observacoes-paciente', { params: { pacienteId } }).then((r) => r.data),
 };
 
+// ---------- Testes psicológicos (placeholder — sem catálogo ainda) ----------
+export interface TestePsicologico {
+  id: string;
+  clinicaId: string;
+  pacienteId: string;
+  nomeTeste: string;
+  dataAplicacao: string;
+  resultado?: string;
+  aplicadoPor: string;
+  criadoEm: string;
+}
+
+export const testesPsicologicosApi = {
+  create: (payload: { pacienteId: string; nomeTeste: string; dataAplicacao: string; resultado?: string }) =>
+    api.post<TestePsicologico>('/testes-psicologicos', payload).then((r) => r.data),
+  listByPaciente: (pacienteId: string) =>
+    api.get<TestePsicologico[]>('/testes-psicologicos', { params: { pacienteId } }).then((r) => r.data),
+};
+
 // ---------- Super Admin ----------
 export interface ListUsersParams {
   papel?: Papel;
@@ -342,9 +361,71 @@ export interface DashboardPacientes {
   porSexo: Array<{ _id: string | null; total: number }>;
 }
 
+export interface DashboardAgendamentos {
+  porStatus: Array<{ _id: string | null; total: number }>;
+  porTipo: Array<{ _id: string | null; total: number }>;
+  topMedicos: Array<{ _id: string | null; total: number }>;
+  porMes: Array<{ _id: { ano: number; mes: number }; total: number }>;
+  porDia: Array<{ _id: string; total: number }>;
+  porSemana: Array<{ _id: { ano: number; semana: number }; total: number }>;
+}
+
+export interface DashboardFinanceiroAnalytics {
+  receitasPorMes: Array<{ _id: { ano: number; mes: number }; total: number; quantidade: number }>;
+  despesasPorMes: Array<{ _id: { ano: number; mes: number }; total: number; quantidade: number }>;
+  porFormaPagamento: Array<{ _id: string | null; total: number; quantidade: number }>;
+  totalGeral: Array<{ _id: { tipo: string; status: string }; total: number }>;
+}
+
+export interface CobrancaResumo {
+  id: string;
+  pacienteId?: string;
+  pacienteNome?: string;
+  valor: number;
+  vencimento?: string;
+  ciclo?: number;
+}
+
+export interface CobrancasPsicologia {
+  vencidas: CobrancaResumo[];
+  aVencer: CobrancaResumo[];
+  semData: CobrancaResumo[];
+  totalVencido: number;
+  totalAVencer: number;
+}
+
+export interface PacientePerdaSeguimento {
+  pacienteId?: string;
+  pacienteNome?: string;
+  totalAgendamentos: number;
+  faltas: number;
+  ultimaSessaoConcluidaEm?: string;
+}
+
+export interface SlotVago {
+  inicio: string;
+  fim: string;
+}
+
 export const analyticsApi = {
   pacientes: (params: AnalyticsPeriodParams = {}) =>
     api.get<DashboardPacientes>('/analytics/pacientes', { params }).then((r) => r.data),
   pacientesPorRepresentante: (params: AnalyticsPeriodParams = {}) =>
     api.get<Array<{ _id: string; total: number }>>('/analytics/pacientes-por-representante', { params }).then((r) => r.data),
+  agendamentos: (params: AnalyticsPeriodParams = {}) =>
+    api.get<DashboardAgendamentos>('/analytics/agendamentos', { params }).then((r) => r.data),
+  financeiro: (params: AnalyticsPeriodParams = {}) =>
+    api.get<DashboardFinanceiroAnalytics>('/analytics/financeiro', { params }).then((r) => r.data),
+  cobrancasPsicologia: (params: { clinicaId?: string; profissionalId?: string } = {}) =>
+    api.get<CobrancasPsicologia>('/analytics/cobrancas-psicologia', { params }).then((r) => r.data),
+  perdaSeguimento: (params: { clinicaId?: string; profissionalId?: string; diasLimite?: number } = {}) =>
+    api.get<PacientePerdaSeguimento[]>('/analytics/perda-seguimento', { params }).then((r) => r.data),
+  horariosVagos: (params: {
+    data: string;
+    clinicaId?: string;
+    profissionalId?: string;
+    horaInicio?: number;
+    horaFim?: number;
+    slotMinutos?: number;
+  }) => api.get<SlotVago[]>('/analytics/horarios-vagos', { params }).then((r) => r.data),
 };

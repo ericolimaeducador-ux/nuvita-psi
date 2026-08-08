@@ -4,7 +4,11 @@ import { CurrentUser } from '../../auth/presentation/decorators/current-user.dec
 import { JwtAuthGuard } from '../../auth/presentation/guards/jwt-auth.guard';
 import { TenantRequiredGuard } from '../../../common/tenancy/tenant-required.guard';
 import { AnalyticsService } from '../application/analytics.service';
-import { AnalyticsQueryDto } from '../application/dto/analytics-query.dto';
+import {
+  AnalyticsQueryDto,
+  HorariosVagosQueryDto,
+  RelatorioPsicologiaQueryDto,
+} from '../application/dto/analytics-query.dto';
 
 // Este sistema não restringe por papel/módulo: qualquer usuário autenticado
 // da clínica (RolesGuard removido de propósito) enxerga os relatórios —
@@ -46,6 +50,34 @@ export class AnalyticsController {
   pacientesPorRepresentante(@Query() query: AnalyticsQueryDto, @CurrentUser() user: AuthTokenPayload) {
     const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
     return this.analyticsService.pacientesPorRepresentante(clinicaId);
+  }
+
+  @Get('cobrancas-psicologia')
+  cobrancasPsicologia(@Query() query: RelatorioPsicologiaQueryDto, @CurrentUser() user: AuthTokenPayload) {
+    const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
+    const profissionalId = this.analyticsService.resolveProfissionalId(user, query.profissionalId);
+    return this.analyticsService.cobrancasPsicologia(clinicaId, profissionalId);
+  }
+
+  @Get('perda-seguimento')
+  perdaSeguimento(@Query() query: RelatorioPsicologiaQueryDto, @CurrentUser() user: AuthTokenPayload) {
+    const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
+    const profissionalId = this.analyticsService.resolveProfissionalId(user, query.profissionalId);
+    return this.analyticsService.perdaSeguimento(clinicaId, profissionalId, query.diasLimite);
+  }
+
+  @Get('horarios-vagos')
+  horariosVagos(@Query() query: HorariosVagosQueryDto, @CurrentUser() user: AuthTokenPayload) {
+    const clinicaId = this.analyticsService.resolveClinicaId(user, query.clinicaId);
+    const profissionalId = this.analyticsService.resolveProfissionalId(user, query.profissionalId);
+    return this.analyticsService.horariosVagos(
+      clinicaId,
+      new Date(query.data),
+      profissionalId,
+      query.horaInicio,
+      query.horaFim,
+      query.slotMinutos,
+    );
   }
 
   private period(query: AnalyticsQueryDto) {

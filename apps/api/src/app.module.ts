@@ -18,6 +18,7 @@ import { ProntuariosModule } from './modules/prontuarios/prontuarios.module';
 import { TelemedicinaModule } from './modules/telemedicina/telemedicina.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { ObservacoesPacienteModule } from './modules/observacoes-paciente/observacoes-paciente.module';
+import { TestesPsicologicosModule } from './modules/testes-psicologicos/testes-psicologicos.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ObservacoesPacienteModule } from './modules/observacoes-paciente/observ
     HealthModule,
     SuperAdminModule,
     ObservacoesPacienteModule,
+    TestesPsicologicosModule,
   ],
 })
 export class AppModule {}
