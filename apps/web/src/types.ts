@@ -153,7 +153,6 @@ export enum Modulo {
   AGENDA = 'AGENDA',
   PRONTUARIOS = 'PRONTUARIOS',
   DOCUMENTOS = 'DOCUMENTOS',
-  FINANCEIRO = 'FINANCEIRO',
   NOTIFICACOES = 'NOTIFICACOES',
   TELEMEDICINA = 'TELEMEDICINA',
   ANALYTICS = 'ANALYTICS',
@@ -171,7 +170,6 @@ export const MODULO_LABEL: Record<Modulo, string> = {
   [Modulo.AGENDA]: 'Agenda',
   [Modulo.PRONTUARIOS]: 'Prontuários',
   [Modulo.DOCUMENTOS]: 'Documentos',
-  [Modulo.FINANCEIRO]: 'Financeiro',
   [Modulo.NOTIFICACOES]: 'Notificações',
   [Modulo.TELEMEDICINA]: 'Telemedicina',
   [Modulo.ANALYTICS]: 'Relatórios / analytics',
@@ -187,7 +185,7 @@ const M = Modulo;
 export const PERMISSOES_PADRAO_POR_PAPEL: Record<Papel, Modulo[]> = {
   [Papel.SUPER_ADMIN]: TODOS_MODULOS,
   [Papel.ADMIN]: [
-    M.DASHBOARD, M.PACIENTES, M.AGENDA, M.PRONTUARIOS, M.DOCUMENTOS, M.FINANCEIRO,
+    M.DASHBOARD, M.PACIENTES, M.AGENDA, M.PRONTUARIOS, M.DOCUMENTOS,
     M.NOTIFICACOES, M.TELEMEDICINA, M.ANALYTICS, M.CLINICA,
   ],
   [Papel.MEDICO]: [
@@ -196,14 +194,14 @@ export const PERMISSOES_PADRAO_POR_PAPEL: Record<Papel, Modulo[]> = {
   ],
   // Atendimento psicológico é um extra: só o psicólogo enxerga por padrão;
   // outros usuários ganham por concessão individual no painel super-admin.
-  // O financeiro da psicologia é o caixa do próprio psicólogo (autônomo) — não
-  // se confunde com o M.FINANCEIRO da clínica, que ele não enxerga.
+  // O financeiro da psicologia é o único financeiro do produto — é o caixa
+  // do próprio psicólogo (autônomo), por ciclo de sessões.
   [Papel.PSICOLOGO]: [
     M.DASHBOARD, M.PACIENTES, M.AGENDA, M.DOCUMENTOS, M.TELEMEDICINA,
     M.ATENDIMENTO_PSICOLOGICO, M.FINANCEIRO_PSICOLOGIA, M.ANALYTICS,
   ],
   [Papel.SECRETARIA]: [
-    M.DASHBOARD, M.PACIENTES, M.AGENDA, M.DOCUMENTOS, M.FINANCEIRO, M.NOTIFICACOES, M.ANALYTICS,
+    M.DASHBOARD, M.PACIENTES, M.AGENDA, M.DOCUMENTOS, M.NOTIFICACOES, M.ANALYTICS,
   ],
   [Papel.PACIENTE]: [M.DASHBOARD, M.ANALYTICS],
 };
@@ -475,14 +473,6 @@ export interface Documento {
   criadoEm: string;
 }
 
-// Espelho de packages/shared/src/checklist-documentos/documentos-padrao.ts —
-// usado como sugestão de nome ao anexar um documento.
-export const DOCUMENTOS_PADRAO: string[] = [
-  'RG ou CNH (documento de identificação com foto)',
-  'Comprovante de endereço',
-  'Termo de consentimento assinado',
-];
-
 export interface PresignUploadResponse {
   documento: Documento;
   uploadUrl: string;
@@ -736,27 +726,6 @@ export interface ObservacaoPaciente {
   autorEmail: string;
   texto: string;
   criadoEm: string;
-}
-
-export enum StatusChecklistDocumento {
-  PENDENTE = 'pendente',
-  RECEBIDO = 'recebido',
-}
-export const STATUS_CHECKLIST_DOCUMENTO_LABEL: Record<StatusChecklistDocumento, string> = {
-  [StatusChecklistDocumento.PENDENTE]: 'Pendente',
-  [StatusChecklistDocumento.RECEBIDO]: 'Recebido',
-};
-
-export interface ChecklistDocumentoItem {
-  id: string;
-  clinicaId: string;
-  pacienteId: string;
-  nome: string;
-  status: StatusChecklistDocumento;
-  observacao?: string;
-  criadoPor: string;
-  criadoEm: string;
-  atualizadoEm: string;
 }
 
 // ---------- Super Admin ----------
