@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { GlobalThrottlerGuard } from './common/http/global-throttler.guard';
 import { SecurityModule } from './common/security/security.module';
 import { TenancyModule } from './common/tenancy/tenancy.module';
 import { AppConfigService } from './common/security/config.service';
@@ -29,9 +31,13 @@ import { IaClinicaModule } from './modules/ia-clinica/ia-clinica.module';
     }),
     SecurityModule,
     TenancyModule,
-    // Limite padrão para onde o AuthThrottlerGuard for aplicado (hoje, só as
-    // rotas de /auth). Rotas específicas apertam com @Throttle().
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 30 }]),
+    // Teto padrão de TODA rota da API (o GlobalThrottlerGuard abaixo é global).
+    // 300/min = 5 req/s por IP: alto o bastante para não punir uma clínica
+    // inteira atrás de um único IP de NAT, e baixo o bastante para conter
+    // loop de retry no front ou abuso das rotas públicas. Rotas sensíveis ou
+    // caras apertam bem abaixo disso com @Throttle() (auth: 5-10/min,
+    // ia-clinica: 10/min).
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
     MongooseModule.forRootAsync({
       imports: [SecurityModule],
       inject: [AppConfigService],
@@ -54,6 +60,12 @@ import { IaClinicaModule } from './modules/ia-clinica/ia-clinica.module';
     ObservacoesPacienteModule,
     TestesPsicologicosModule,
     IaClinicaModule,
+  ],
+  providers: [
+    // Throttling global. Sem isso o ThrottlerModule acima só valeria onde um
+    // guard fosse declarado à mão — era o caso até aqui, e deixava as rotas
+    // públicas de telemedicina/acesso sem limite nenhum.
+    { provide: APP_GUARD, useClass: GlobalThrottlerGuard },
   ],
 })
 export class AppModule {}

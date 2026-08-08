@@ -20,14 +20,13 @@ import {
 } from '../auth.constants';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { AuthThrottlerGuard } from './guards/auth-throttler.guard';
 import { AllowWithoutTenant } from '../../../common/tenancy/tenant-required.guard';
 
-// Rate limiting por IP (anti brute-force de senha/TOTP). O padrão do módulo é
-// 30 req/min; login e register apertam abaixo. Só as rotas de /auth têm o
-// guard — o resto da API segue sem throttling (polling da telemedicina etc.).
+// Rate limiting por IP (anti brute-force de senha/TOTP). O guard é global
+// (GlobalThrottlerGuard, registrado como APP_GUARD no AppModule) e usa o mesmo
+// tracker por X-Forwarded-For; aqui só apertamos o limite bem abaixo do teto
+// padrão de 300/min nas rotas que aceitam credencial.
 @Controller('auth')
-@UseGuards(AuthThrottlerGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

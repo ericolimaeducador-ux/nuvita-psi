@@ -1,5 +1,5 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { Papel } from '../../../../../../packages/shared/src/auth';
 import { Roles } from '../../auth/presentation/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/presentation/guards/jwt-auth.guard';
@@ -11,9 +11,10 @@ import { GerarPrescricaoDto } from '../application/dto/gerar-prescricao.dto';
 
 // Só o psicólogo aciona a IA — mesmo padrão de acesso dos documentos
 // clínicos. Throttle apertado: são chamadas pagas a um provedor externo,
-// o limite é uma trava de custo/abuso, não uma questão de segurança.
+// o limite é uma trava de custo/abuso, não uma questão de segurança. O guard
+// de throttling é global (APP_GUARD); aqui fica só o @Throttle que aperta.
 @Controller('ia-clinica')
-@UseGuards(JwtAuthGuard, TenantRequiredGuard, RolesGuard, ThrottlerGuard)
+@UseGuards(JwtAuthGuard, TenantRequiredGuard, RolesGuard)
 @Roles(Papel.PSICOLOGO)
 @Throttle({ default: { ttl: 60_000, limit: 10 } })
 export class IaClinicaController {
