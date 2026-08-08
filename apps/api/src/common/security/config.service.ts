@@ -10,6 +10,7 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
+import { validarForcaDosSegredos } from './config-validation';
 import { GoogleSecretsService } from './google-secrets.service';
 
 export type ConfigSource = 'gcp' | 'env';
@@ -127,11 +128,35 @@ export class AppConfigService {
     const source = resolveConfigSource();
     this.logger.log(`Config source: ${source} (NODE_ENV=${process.env.NODE_ENV || 'development'})`);
 
-    if (source === 'gcp') {
-      return this.loadFromGCP();
-    } else {
-      return this.loadFromEnv();
+    const config = source === 'gcp' ? await this.loadFromGCP() : this.loadFromEnv();
+
+    this.validate(config);
+
+    return config;
+  }
+
+  /**
+   * Fail-fast de configuração. Carregar sem erro só provava que as variáveis
+   * EXISTEM; aqui checamos se o conteúdo presta. Roda depois de qualquer uma
+   * das duas fontes (GCP ou env) justamente porque o risco é o mesmo nas duas:
+   * o CONFIG_SOURCE decide de onde vem o segredo, não se ele é forte.
+   */
+  private validate(config: AppConfig): void {
+    const { erros, avisos } = validarForcaDosSegredos(config);
+
+    for (const aviso of avisos) {
+      this.logger.warn(aviso);
     }
+
+    if (erros.length > 0) {
+      const lista = erros.map((problema) => `  - ${problema}`).join('\n');
+      throw new Error(
+        `Configuração inválida para NODE_ENV=${config.nodeEnv}:\n${lista}\n` +
+          'Gere segredos novos (ex.: openssl rand -base64 48) e atualize o Secret Manager.',
+      );
+    }
+
+    this.logger.log('✓ Segredos validados');
   }
 
   /**

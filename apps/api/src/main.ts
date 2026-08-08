@@ -29,6 +29,12 @@ async function bootstrap() {
 
   app.useGlobalFilters(new InvalidObjectIdFilter(app.get(HttpAdapterHost).httpAdapter));
 
+  // O Cloud Run manda SIGTERM e espera ~10s antes do SIGKILL. Sem os hooks, o
+  // Nest não propaga o sinal: requisição em voo é cortada no meio e as
+  // conexões Mongo/Redis não fecham limpas — erro no cliente a cada deploy ou
+  // scale-down, e conexão órfã acumulando no Atlas.
+  app.enableShutdownHooks();
+
   app.enableCors({
     origin: config.corsOrigin,
     credentials: true,

@@ -17,8 +17,14 @@ Thumbs.db
 # Claude Code – configurações locais/pessoais
 .claude/settings.local.json
 
-# Graphify – artefatos locais (caminhos absolutos, não portáveis)
-.graphify/
+# Graphify – allowlist: ignora tudo por padrão e libera só o que passou no
+# `graphify portable-check` (caminhos repo-relativos). manifest.json fica de
+# fora porque carrega caminhos absolutos da máquina; branch/worktree/cache são
+# estado local por definição. Assim, artefato novo do graphify nunca entra no
+# commit por acidente — precisa ser liberado explicitamente aqui.
+.graphify/*
+!.graphify/graph.json
+!.graphify/GRAPH_REPORT.md
 
 # INPI – documentos particulares de registro e pacotes gerados para depósito
 docs/inpi/
