@@ -32,3 +32,22 @@ export class TestePsicologicoMongo {
 
 export const TestePsicologicoSchema = SchemaFactory.createForClass(TestePsicologicoMongo);
 TestePsicologicoSchema.index({ clinicaId: 1, pacienteId: 1, dataAplicacao: -1 });
+
+// Registro de teste psicológico aplicado é evidência clínica do atendimento
+// — mesmo padrão de append-only já aplicado a observacoes-paciente e
+// prontuarios: nunca update/delete, só criação. (Se houver exigência
+// normativa específica do CFP para este tipo de registro, precisa ser
+// verificada em fonte oficial antes de virar regra documentada — aqui é
+// só consistência de engenharia com o padrão já adotado no projeto.) Sem
+// isso, um resultado de teste poderia ser silenciosamente sobrescrito ou
+// apagado sem deixar rastro, mesmo sem nenhum endpoint de update/delete
+// exposto hoje (defesa em profundidade contra migração/admin futuro).
+const rejectMutation = () => {
+  throw new Error('Teste psicologico e append-only.');
+};
+TestePsicologicoSchema.pre('updateOne', rejectMutation);
+TestePsicologicoSchema.pre('updateMany', rejectMutation);
+TestePsicologicoSchema.pre('findOneAndUpdate', rejectMutation);
+TestePsicologicoSchema.pre('deleteOne', rejectMutation);
+TestePsicologicoSchema.pre('deleteMany', rejectMutation);
+TestePsicologicoSchema.pre('findOneAndDelete', rejectMutation);
