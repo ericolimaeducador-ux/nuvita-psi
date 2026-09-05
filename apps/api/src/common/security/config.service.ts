@@ -56,6 +56,13 @@ export interface AppConfig {
   patientDataEncryptionKey: string;
   patientDataHashKey?: string;
 
+  // AI usage audit trail — encryption of stored AI input/output.
+  // Own secret domain, never PATIENT_DATA_ENCRYPTION_KEY. Presence is required
+  // in every environment (enforced by the loader); the 32-byte format is
+  // checked by IaUsoCryptoService. Optional here only so the typed config
+  // fixtures keep compiling.
+  iaUsoEncryptionKey?: string;
+
   // Document Storage (S3/R2)
   documentStorageBucket: string;
   documentStorageRegion: string;
@@ -173,6 +180,7 @@ export class AppConfigService {
         jwtRefreshSecret,
         patientDataEncryptionKey,
         patientDataHashKey,
+        iaUsoEncryptionKey,
         documentStorageBucket,
         documentStorageRegion,
         documentStorageEndpoint,
@@ -202,6 +210,7 @@ export class AppConfigService {
         this.getSecretOrThrow('jwt-refresh-secret'),
         this.getSecretOrThrow('patient-data-encryption-key'),
         this.getSecretOrDefault('patient-data-hash-key', undefined),
+        this.getSecretOrThrow('ia-uso-encryption-key'),
         this.getSecretOrThrow('document-storage-bucket'),
         this.getSecretOrThrow('document-storage-region'),
         this.getSecretOrThrow('document-storage-endpoint'),
@@ -237,6 +246,7 @@ export class AppConfigService {
         bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
         patientDataEncryptionKey,
         patientDataHashKey,
+        iaUsoEncryptionKey,
         documentStorageBucket,
         documentStorageRegion,
         documentStorageEndpoint,
@@ -290,6 +300,7 @@ export class AppConfigService {
       'JWT_ACCESS_SECRET',
       'JWT_REFRESH_SECRET',
       'PATIENT_DATA_ENCRYPTION_KEY',
+      'IA_USO_ENCRYPTION_KEY',
       'DOCUMENT_STORAGE_BUCKET',
       'DOCUMENT_STORAGE_REGION',
       'DOCUMENT_STORAGE_ENDPOINT',
@@ -320,6 +331,7 @@ export class AppConfigService {
       bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
       patientDataEncryptionKey: process.env.PATIENT_DATA_ENCRYPTION_KEY!,
       patientDataHashKey: process.env.PATIENT_DATA_HASH_KEY,
+      iaUsoEncryptionKey: process.env.IA_USO_ENCRYPTION_KEY!,
       documentStorageBucket: process.env.DOCUMENT_STORAGE_BUCKET!,
       documentStorageRegion: process.env.DOCUMENT_STORAGE_REGION!,
       documentStorageEndpoint: process.env.DOCUMENT_STORAGE_ENDPOINT!,

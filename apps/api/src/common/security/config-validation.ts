@@ -33,6 +33,7 @@ const PLACEHOLDERS = new Set([
   'your-access-key-id',
   'your-secret-access-key',
   'sk-ant-your-api-key-here',
+  'your-ia-uso-base64-encoded-32-bytes-here',
 ]);
 
 /** Segredos que precisam de comprimento mínimo além de não ser placeholder. */
@@ -51,6 +52,7 @@ const SEGREDOS_COM_TAMANHO_MINIMO: ReadonlyArray<[keyof AppConfig, string]> = [
 const SEGREDOS_SEM_PLACEHOLDER: ReadonlyArray<[keyof AppConfig, string]> = [
   ['patientDataEncryptionKey', 'PATIENT_DATA_ENCRYPTION_KEY'],
   ['patientDataHashKey', 'PATIENT_DATA_HASH_KEY'],
+  ['iaUsoEncryptionKey', 'IA_USO_ENCRYPTION_KEY'],
   ['documentStorageAccessKeyId', 'DOCUMENT_STORAGE_ACCESS_KEY_ID'],
   ['documentStorageSecretAccessKey', 'DOCUMENT_STORAGE_SECRET_ACCESS_KEY'],
   ['anthropicApiKey', 'ANTHROPIC_API_KEY'],
