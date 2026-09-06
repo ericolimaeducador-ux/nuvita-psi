@@ -1,6 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { AuthTokenPayload } from '../../../../../../packages/shared/src/auth';
+import { AUDIT_LOG_REPOSITORY } from '../../auth/auth.constants';
+import { AuditLogRepository } from '../../auth/application/ports/audit-log.repository';
+import { AuditEvent } from '../../auth/domain/audit-event.enum';
+import { AppConfigService } from '../../../common/security/config.service';
+import { resolveTenantClinicaId } from '../../../common/tenancy/resolve-clinica-id';
 import { LinhaTerapeutica } from '../../pacientes/domain/paciente.entity';
+import { TipoUsoIA } from '../domain/registro-uso-ia.enum';
 import { AnthropicClient } from '../infrastructure/anthropic.client';
+import { IaUsoCryptoService } from '../infrastructure/crypto/ia-uso-crypto.service';
+import { REGISTRO_USO_IA_REPOSITORY } from '../ia-clinica.constants';
+import { RegistroUsoIaRepository } from './ports/registro-uso-ia.repository';
 import { SugerirAbordagemDto } from './dto/sugerir-abordagem.dto';
 import { GerarPrescricaoDto } from './dto/gerar-prescricao.dto';
 
@@ -22,11 +32,104 @@ const SYSTEM_PROMPT_BASE =
   'sempre em português do Brasil, em texto corrido ou lista curta — sem markdown pesado, pronto para ser ' +
   'lido por um profissional em poucos segundos entre uma sessão e outra.';
 
+export interface IaClinicaRequestContext {
+  ip: string;
+  userAgent: string;
+  user: AuthTokenPayload;
+}
+
+interface PromptIA {
+  user: string;
+  maxTokens: number;
+}
+
 @Injectable()
 export class IaClinicaService {
-  constructor(private readonly anthropic: AnthropicClient) {}
+  constructor(
+    private readonly anthropic: AnthropicClient,
+    private readonly crypto: IaUsoCryptoService,
+    @Inject(REGISTRO_USO_IA_REPOSITORY) private readonly registros: RegistroUsoIaRepository,
+    @Inject(AUDIT_LOG_REPOSITORY) private readonly auditLogs: AuditLogRepository,
+    private readonly configService: AppConfigService,
+  ) {}
 
-  async sugerirAbordagem(dto: SugerirAbordagemDto): Promise<{ sugestao: string }> {
+  async sugerirAbordagem(
+    dto: SugerirAbordagemDto,
+    context: IaClinicaRequestContext,
+  ): Promise<{ sugestao: string; registroUsoIaId: string }> {
+    const { texto, registroUsoIaId } = await this.gerarERegistrar(
+      dto,
+      TipoUsoIA.SUGESTAO_ABORDAGEM,
+      context,
+      this.promptAbordagem(dto),
+    );
+    return { sugestao: texto, registroUsoIaId };
+  }
+
+  async gerarPrescricao(
+    dto: GerarPrescricaoDto,
+    context: IaClinicaRequestContext,
+  ): Promise<{ prescricao: string; registroUsoIaId: string }> {
+    const { texto, registroUsoIaId } = await this.gerarERegistrar(
+      dto,
+      TipoUsoIA.PRESCRICAO_CUIDADOS,
+      context,
+      this.promptPrescricao(dto),
+    );
+    return { prescricao: texto, registroUsoIaId };
+  }
+
+  /**
+   * Esqueleto compartilhado (Template Method) das duas operações de IA:
+   * valida o tenant → chama a IA → cifra input e output → persiste o
+   * RegistroUsoIa imutável → grava o audit log → devolve texto + id.
+   *
+   * Fail-closed: qualquer falha depois da resposta da IA (persistência ou
+   * audit) propaga — a sugestão nunca sai sem trilha. Escrita de audit sem
+   * try/catch, mesmo comportamento dos outros módulos.
+   */
+  private async gerarERegistrar<D>(
+    dto: D,
+    tipo: TipoUsoIA,
+    context: IaClinicaRequestContext,
+    prompt: PromptIA,
+  ): Promise<{ texto: string; registroUsoIaId: string }> {
+    // Antes de gastar uma chamada paga à IA: o tenant precisa estar resolvido.
+    // resolveTenantClinicaId lança se não estiver — nunca há registro de
+    // auditoria sem clinicaId.
+    const clinicaId = resolveTenantClinicaId(context.user);
+
+    const texto = await this.anthropic.gerarTexto(SYSTEM_PROMPT_BASE, prompt.user, prompt.maxTokens);
+
+    const input = this.crypto.encrypt(JSON.stringify(dto));
+    const output = this.crypto.encrypt(texto);
+
+    const registro = await this.registros.create({
+      clinicaId,
+      usuarioId: context.user.sub,
+      tipo,
+      modelo: this.configService.getConfig().anthropicModel,
+      inputCifrado: input.cifrado,
+      inputIv: input.iv,
+      inputAuthTag: input.authTag,
+      outputCifrado: output.cifrado,
+      outputIv: output.iv,
+      outputAuthTag: output.authTag,
+    });
+
+    await this.auditLogs.create({
+      event: AuditEvent.AI_SUGGESTION_GENERATED,
+      userId: context.user.sub,
+      email: context.user.email,
+      ip: context.ip,
+      userAgent: context.userAgent,
+      metadata: { clinicaId, tipo, registroUsoIaId: registro.id },
+    });
+
+    return { texto, registroUsoIaId: registro.id };
+  }
+
+  private promptAbordagem(dto: SugerirAbordagemDto): PromptIA {
     const linha = dto.linhaTerapeutica ? LINHA_LABEL[dto.linhaTerapeutica] : undefined;
 
     const partes: string[] = [];
@@ -48,18 +151,17 @@ export class IaClinicaService {
     if (dto.evolucao) partes.push(`Evolução registrada na sessão atual: ${dto.evolucao}`);
     if (dto.anotacoesLivres) partes.push(`Anotações livres da sessão atual: ${dto.anotacoesLivres}`);
 
-    const userPrompt =
+    const user =
       `${partes.join('\n')}\n\n` +
       'Com base nesse contexto, sugira ao psicólogo, de forma objetiva: ' +
       '(1) 1-2 técnicas ou intervenções coerentes com a linha terapêutica indicada para usar nesta sessão ou na próxima; ' +
       '(2) 2-3 perguntas ou direções de condução de sessão que ajudem a aprofundar o que já foi registrado. ' +
       'No máximo 150 palavras.';
 
-    const sugestao = await this.anthropic.gerarTexto(SYSTEM_PROMPT_BASE, userPrompt, 600);
-    return { sugestao };
+    return { user, maxTokens: 600 };
   }
 
-  async gerarPrescricao(dto: GerarPrescricaoDto): Promise<{ prescricao: string }> {
+  private promptPrescricao(dto: GerarPrescricaoDto): PromptIA {
     const linha = dto.linhaTerapeutica ? LINHA_LABEL[dto.linhaTerapeutica] : undefined;
 
     const partes: string[] = [];
@@ -73,14 +175,13 @@ export class IaClinicaService {
     }
     if (dto.contextoClinico) partes.push(`Contexto clínico relevante: ${dto.contextoClinico}`);
 
-    const userPrompt =
+    const user =
       `${partes.join('\n')}\n\n` +
       'Redija um parágrafo curto de "Prescrição de Cuidados em Psicologia" para o paciente, coerente com a ' +
       'linha terapêutica informada — cuidados práticos entre sessões (ex.: respiração/relaxamento, diário ' +
       'comportamental ou de sonhos, leituras/filmes, exercícios específicos da linha). Escreva em linguagem ' +
       'simples, direta ao paciente, pronta para ser impressa como orientação. No máximo 120 palavras.';
 
-    const prescricao = await this.anthropic.gerarTexto(SYSTEM_PROMPT_BASE, userPrompt, 500);
-    return { prescricao };
+    return { user, maxTokens: 500 };
   }
 }

@@ -1,11 +1,14 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { Papel } from '../../../../../../packages/shared/src/auth';
+import { Request } from 'express';
+import { AuthTokenPayload, Papel } from '../../../../../../packages/shared/src/auth';
+import { extractRequestMeta } from '../../../common/http/client-ip';
+import { CurrentUser } from '../../auth/presentation/decorators/current-user.decorator';
 import { Roles } from '../../auth/presentation/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/presentation/guards/roles.guard';
 import { TenantRequiredGuard } from '../../../common/tenancy/tenant-required.guard';
-import { IaClinicaService } from '../application/ia-clinica.service';
+import { IaClinicaRequestContext, IaClinicaService } from '../application/ia-clinica.service';
 import { SugerirAbordagemDto } from '../application/dto/sugerir-abordagem.dto';
 import { GerarPrescricaoDto } from '../application/dto/gerar-prescricao.dto';
 
@@ -21,12 +24,24 @@ export class IaClinicaController {
   constructor(private readonly service: IaClinicaService) {}
 
   @Post('sugerir-abordagem')
-  sugerirAbordagem(@Body() dto: SugerirAbordagemDto) {
-    return this.service.sugerirAbordagem(dto);
+  sugerirAbordagem(
+    @Body() dto: SugerirAbordagemDto,
+    @CurrentUser() user: AuthTokenPayload,
+    @Req() request: Request,
+  ) {
+    return this.service.sugerirAbordagem(dto, this.contexto(request, user));
   }
 
   @Post('gerar-prescricao')
-  gerarPrescricao(@Body() dto: GerarPrescricaoDto) {
-    return this.service.gerarPrescricao(dto);
+  gerarPrescricao(
+    @Body() dto: GerarPrescricaoDto,
+    @CurrentUser() user: AuthTokenPayload,
+    @Req() request: Request,
+  ) {
+    return this.service.gerarPrescricao(dto, this.contexto(request, user));
+  }
+
+  private contexto(request: Request, user: AuthTokenPayload): IaClinicaRequestContext {
+    return { ...extractRequestMeta(request), user };
   }
 }
