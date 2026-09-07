@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { AuthTokenPayload } from '../../../../../../packages/shared/src/auth';
@@ -13,6 +14,7 @@ import { AppConfigService } from '../../../common/security/config.service';
 import { resolveTenantClinicaId } from '../../../common/tenancy/resolve-clinica-id';
 import { LinhaTerapeutica } from '../../pacientes/domain/paciente.entity';
 import { DecisaoUsoIa } from '../domain/decisao-uso-ia.entity';
+import { RegistroUsoIa } from '../domain/registro-uso-ia.entity';
 import { DecisaoUsoIA, TipoUsoIA } from '../domain/registro-uso-ia.enum';
 import { AnthropicClient } from '../infrastructure/anthropic.client';
 import { IaUsoCryptoService } from '../infrastructure/crypto/ia-uso-crypto.service';
@@ -53,6 +55,8 @@ interface PromptIA {
 
 @Injectable()
 export class IaClinicaService {
+  private readonly logger = new Logger(IaClinicaService.name);
+
   constructor(
     private readonly anthropic: AnthropicClient,
     private readonly crypto: IaUsoCryptoService,
@@ -106,14 +110,17 @@ export class IaClinicaService {
 
     const registro = await this.registros.findByIdAndClinica(registroUsoIaId, clinicaId);
     if (!registro) {
+      this.logDecisaoRejeitada(404, registroUsoIaId, clinicaId, context.user.sub);
       throw new NotFoundException('Registro de uso de IA nao encontrado.');
     }
     if (registro.usuarioId !== context.user.sub) {
+      this.logDecisaoRejeitada(403, registroUsoIaId, clinicaId, context.user.sub);
       throw new ForbiddenException(
         'Somente o profissional que gerou a sugestao pode registrar a decisao sobre ela.',
       );
     }
     if (await this.decisoes.existsForRegistro(registroUsoIaId)) {
+      this.logDecisaoRejeitada(409, registroUsoIaId, clinicaId, context.user.sub);
       throw new ConflictException('Decisao de uso de IA ja registrada.');
     }
 
@@ -126,6 +133,7 @@ export class IaClinicaService {
       });
     } catch (erro) {
       if (this.ehErroDeChaveDuplicada(erro)) {
+        this.logDecisaoRejeitada(409, registroUsoIaId, clinicaId, context.user.sub);
         throw new ConflictException('Decisao de uso de IA ja registrada.');
       }
       throw erro;
@@ -148,13 +156,57 @@ export class IaClinicaService {
   }
 
   /**
+   * Observabilidade (§11 do TDD): o mecanismo de métrica é o log estruturado —
+   * o projeto não tem lib de métricas. JSON numa linha, só ids/enums, nunca
+   * conteúdo de prompt/sugestão.
+   */
+  private logEventoObservabilidade(
+    level: 'error' | 'warn',
+    payload: Record<string, unknown>,
+  ): void {
+    this.logger[level](JSON.stringify({ level, ...payload }));
+  }
+
+  /** Caminho fail-closed da geração: `stage` separa a falha na coleção nova da falha no audit_logs. */
+  private logFalhaGeracao(
+    stage: 'persist_registro' | 'audit_log',
+    clinicaId: string,
+    usuarioId: string,
+  ): void {
+    this.logEventoObservabilidade('error', {
+      msg: 'Falha no caminho fail-closed da geracao de sugestao de IA; sugestao nao devolvida.',
+      event: 'ai_usage_persist_failure',
+      stage,
+      clinicaId,
+      usuarioId,
+    });
+  }
+
+  private logDecisaoRejeitada(
+    status: 404 | 403 | 409,
+    registroUsoIaId: string,
+    clinicaId: string,
+    usuarioId: string,
+  ): void {
+    this.logEventoObservabilidade('warn', {
+      msg: 'Registro de decisao de uso de IA rejeitado.',
+      event: 'ai_decision_endpoint_error',
+      status,
+      registroUsoIaId,
+      clinicaId,
+      usuarioId,
+    });
+  }
+
+  /**
    * Esqueleto compartilhado (Template Method) das duas operações de IA:
    * valida o tenant → chama a IA → cifra input e output → persiste o
    * RegistroUsoIa imutável → grava o audit log → devolve texto + id.
    *
    * Fail-closed: qualquer falha depois da resposta da IA (persistência ou
-   * audit) propaga — a sugestão nunca sai sem trilha. Escrita de audit sem
-   * try/catch, mesmo comportamento dos outros módulos.
+   * audit) propaga — a sugestão nunca sai sem trilha. Cada escrita loga um
+   * evento `ai_usage_persist_failure` (com `stage`) e re-lança; o comportamento
+   * de propagar é o mesmo dos outros módulos.
    */
   private async gerarERegistrar<D>(
     dto: D,
@@ -172,27 +224,38 @@ export class IaClinicaService {
     const input = this.crypto.encrypt(JSON.stringify(dto));
     const output = this.crypto.encrypt(texto);
 
-    const registro = await this.registros.create({
-      clinicaId,
-      usuarioId: context.user.sub,
-      tipo,
-      modelo: this.configService.getConfig().anthropicModel,
-      inputCifrado: input.cifrado,
-      inputIv: input.iv,
-      inputAuthTag: input.authTag,
-      outputCifrado: output.cifrado,
-      outputIv: output.iv,
-      outputAuthTag: output.authTag,
-    });
+    let registro: RegistroUsoIa;
+    try {
+      registro = await this.registros.create({
+        clinicaId,
+        usuarioId: context.user.sub,
+        tipo,
+        modelo: this.configService.getConfig().anthropicModel,
+        inputCifrado: input.cifrado,
+        inputIv: input.iv,
+        inputAuthTag: input.authTag,
+        outputCifrado: output.cifrado,
+        outputIv: output.iv,
+        outputAuthTag: output.authTag,
+      });
+    } catch (erro) {
+      this.logFalhaGeracao('persist_registro', clinicaId, context.user.sub);
+      throw erro;
+    }
 
-    await this.auditLogs.create({
-      event: AuditEvent.AI_SUGGESTION_GENERATED,
-      userId: context.user.sub,
-      email: context.user.email,
-      ip: context.ip,
-      userAgent: context.userAgent,
-      metadata: { clinicaId, tipo, registroUsoIaId: registro.id },
-    });
+    try {
+      await this.auditLogs.create({
+        event: AuditEvent.AI_SUGGESTION_GENERATED,
+        userId: context.user.sub,
+        email: context.user.email,
+        ip: context.ip,
+        userAgent: context.userAgent,
+        metadata: { clinicaId, tipo, registroUsoIaId: registro.id },
+      });
+    } catch (erro) {
+      this.logFalhaGeracao('audit_log', clinicaId, context.user.sub);
+      throw erro;
+    }
 
     return { texto, registroUsoIaId: registro.id };
   }

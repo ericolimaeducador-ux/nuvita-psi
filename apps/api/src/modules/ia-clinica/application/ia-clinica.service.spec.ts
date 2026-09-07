@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
 import { Papel } from '../../../../../../packages/shared/src/auth';
 import { AuditLogRepository } from '../../auth/application/ports/audit-log.repository';
 import { AuditEvent } from '../../auth/domain/audit-event.enum';
@@ -263,5 +263,154 @@ describe('IaClinicaService — registro de decisão de uso de IA', () => {
     ).rejects.toThrow();
     expect(registros.findByIdAndClinica).not.toHaveBeenCalled();
     expect(decisoes.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('IaClinicaService — observabilidade (Fase 10)', () => {
+  const registro = {
+    id: 'registro-1',
+    clinicaId: 'clinica-1',
+    usuarioId: 'psi-1',
+    tipo: TipoUsoIA.SUGESTAO_ABORDAGEM,
+    modelo: 'claude-sonnet-5',
+    inputCifrado: 'x',
+    inputIv: 'x',
+    inputAuthTag: 'x',
+    outputCifrado: 'x',
+    outputIv: 'x',
+    outputAuthTag: 'x',
+    criadoEm: new Date('2026-09-06T10:00:00.000Z'),
+  };
+
+  let errorSpy: jest.SpyInstance;
+  let warnSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it('fail-closed: loga evento estruturado ai_usage_persist_failure quando a persistência do registro falha', async () => {
+    const { service } = makeService({
+      registros: { create: jest.fn().mockRejectedValue(new Error('mongo down')) },
+    });
+
+    await expect(
+      service.sugerirAbordagem({ motivoAtendimento: 'ansiedade' }, context),
+    ).rejects.toThrow('mongo down');
+
+    expect(errorSpy).toHaveBeenCalled();
+    const payload = JSON.parse(errorSpy.mock.calls[0][0] as string);
+    expect(payload).toMatchObject({
+      level: 'error',
+      event: 'ai_usage_persist_failure',
+      stage: 'persist_registro',
+      clinicaId: 'clinica-1',
+      usuarioId: 'psi-1',
+    });
+  });
+
+  it('fail-closed: loga ai_usage_persist_failure com stage audit_log quando o audit log da geração falha', async () => {
+    const { service } = makeService({
+      auditLogs: { create: jest.fn().mockRejectedValue(new Error('audit down')) },
+    });
+
+    await expect(
+      service.sugerirAbordagem({ motivoAtendimento: 'ansiedade' }, context),
+    ).rejects.toThrow('audit down');
+
+    expect(errorSpy).toHaveBeenCalled();
+    const payload = JSON.parse(errorSpy.mock.calls[0][0] as string);
+    expect(payload).toMatchObject({
+      level: 'error',
+      event: 'ai_usage_persist_failure',
+      stage: 'audit_log',
+    });
+  });
+
+  const casosDecisaoRejeitada: Array<{
+    caso: string;
+    status: number;
+    overrides: Parameters<typeof makeService>[0];
+  }> = [
+    {
+      caso: 'registro inexistente → 404',
+      status: 404,
+      overrides: { registros: { findByIdAndClinica: jest.fn().mockResolvedValue(null) } },
+    },
+    {
+      caso: 'usuário diferente do gerador → 403',
+      status: 403,
+      overrides: {
+        registros: {
+          findByIdAndClinica: jest.fn().mockResolvedValue({ ...registro, usuarioId: 'outro-psi' }),
+        },
+      },
+    },
+    {
+      caso: 'decisão já registrada → 409',
+      status: 409,
+      overrides: {
+        registros: { findByIdAndClinica: jest.fn().mockResolvedValue(registro) },
+        decisoes: { existsForRegistro: jest.fn().mockResolvedValue(true) },
+      },
+    },
+  ];
+
+  it.each(casosDecisaoRejeitada)(
+    'decisão rejeitada ($caso) loga ai_decision_endpoint_error com o status',
+    async ({ status, overrides }) => {
+      const { service } = makeService(overrides);
+
+      await expect(
+        service.registrarDecisao('registro-1', DecisaoUsoIA.ACEITA, context),
+      ).rejects.toThrow();
+
+      expect(warnSpy).toHaveBeenCalled();
+      const payload = JSON.parse(warnSpy.mock.calls[0][0] as string);
+      expect(payload).toMatchObject({
+        level: 'warn',
+        event: 'ai_decision_endpoint_error',
+        status,
+        registroUsoIaId: 'registro-1',
+        clinicaId: 'clinica-1',
+        usuarioId: 'psi-1',
+      });
+    },
+  );
+
+  it('corrida no índice único (E11000) também loga ai_decision_endpoint_error status 409', async () => {
+    const err = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
+    const { service } = makeService({
+      registros: { findByIdAndClinica: jest.fn().mockResolvedValue(registro) },
+      decisoes: {
+        existsForRegistro: jest.fn().mockResolvedValue(false),
+        create: jest.fn().mockRejectedValue(err),
+      },
+    });
+
+    await expect(
+      service.registrarDecisao('registro-1', DecisaoUsoIA.ACEITA, context),
+    ).rejects.toThrow(ConflictException);
+
+    expect(warnSpy).toHaveBeenCalled();
+    const payload = JSON.parse(warnSpy.mock.calls[0][0] as string);
+    expect(payload).toMatchObject({ event: 'ai_decision_endpoint_error', status: 409 });
+  });
+
+  it('decisão bem-sucedida não emite evento de erro/observabilidade de falha', async () => {
+    const { service } = makeService({
+      registros: { findByIdAndClinica: jest.fn().mockResolvedValue(registro) },
+    });
+
+    await service.registrarDecisao('registro-1', DecisaoUsoIA.ACEITA, context);
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });

@@ -520,12 +520,19 @@ is a separate, project-wide backlog item, not part of this feature — see §14.
 
 **Structured log format.** JSON lines, consistent with the rest of the API:
 `{ level, msg, event, clinicaId, usuarioId, registroUsoIaId?, decisao?,
-status? }`. Emitted through the NestJS `Logger` (the API has no metrics library
-— prom-client / OpenTelemetry is a project-wide infrastructure decision, not
-one made inside this feature; the metrics above are *defined and emitted as
-structured log events* and derived downstream, exactly as the alert-channel
-mechanism is deferred). The fail-closed path logs at `error` with a stable
-`event` value; the decision 4xx path logs at `warn` with `status`.
+status?, stage? }`. Emitted through the NestJS `Logger` (the API has no metrics
+library — prom-client / OpenTelemetry is a project-wide infrastructure
+decision, not one made inside this feature; the metrics above are *defined and
+emitted as structured log events* and derived downstream, exactly as the
+alert-channel mechanism is deferred). The fail-closed path logs at `error` with
+a stable `event` value; the decision 4xx path logs at `warn` with `status`.
+
+`ai_usage_persist_failure` carries a `stage` field to tell the two fail-closed
+write failures apart without reading the stack trace — `stage:
+"persist_registro"` (the write to the new `registros_uso_ia` collection failed)
+vs `stage: "audit_log"` (the `AI_SUGGESTION_GENERATED` write to the existing
+`audit_logs` collection failed). Same `event` and same severity (both withhold
+the suggestion); only the origin differs, so it is one field, not two events.
 
 **Never logged:** encryption key, prompt text, AI input, AI output, any
 patient clinical content.
