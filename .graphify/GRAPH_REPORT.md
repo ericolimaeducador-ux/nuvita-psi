@@ -1,25 +1,25 @@
 # Graph Report - .  (2026-09-07)
 
 ## Corpus Check
-- 351 files · ~109.687 words
+- 353 files · ~118.001 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1708 nodes · 2886 edges · 230 communities detected
+- 1711 nodes · 2893 edges · 230 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 836 · imports: 714 · method: 512 · imports_from: 432 · calls: 352 · implements: 32 · inherits: 8
+- Edge kinds: contains: 836 · imports: 714 · method: 515 · imports_from: 432 · calls: 356 · implements: 32 · inherits: 8
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 351 · Candidates: 391
-- Excluded: 103 untracked · 57844 ignored · 10 sensitive · 0 missing committed
+- Included files: 353 · Candidates: 393
+- Excluded: 101 untracked · 57848 ignored · 10 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `27445a0`
+- Built from Git commit: `a9a91ba`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `PacienteMongoRepository` - 26 edges
@@ -156,88 +156,88 @@ Cohesion: 0.17
 Nodes (7): CICLO_BADGE, FORMA_PAGAMENTO_LABEL, FormaPagamento, PacientePsicologia, PainelPsicologia, StatusLancamento, Separator
 
 ### Community 29 - "Community 29"
+Cohesion: 0.30
+Nodes (1): IaClinicaService
+
+### Community 30 - "Community 30"
 Cohesion: 0.26
 Nodes (1): PacienteCryptoService
 
-### Community 30 - "Community 30"
+### Community 31 - "Community 31"
 Cohesion: 0.30
 Nodes (1): AgendamentosController
 
-### Community 31 - "Community 31"
+### Community 32 - "Community 32"
 Cohesion: 0.23
 Nodes (1): AnalyticsController
 
-### Community 32 - "Community 32"
+### Community 33 - "Community 33"
 Cohesion: 0.21
 Nodes (1): SuperAdminService
 
-### Community 33 - "Community 33"
+### Community 34 - "Community 34"
 Cohesion: 0.17
 Nodes (9): FormControl, FormDescription, FormFieldContext, FormFieldContextValue, FormItem, FormItemContext, FormItemContextValue, FormLabel (+1 more)
 
-### Community 34 - "Community 34"
+### Community 35 - "Community 35"
 Cohesion: 0.38
 Nodes (1): PsicologiaFinanceiroService
 
-### Community 35 - "Community 35"
+### Community 36 - "Community 36"
 Cohesion: 0.29
 Nodes (2): ClinicaMongoRepository, ClinicaRepository
 
-### Community 36 - "Community 36"
+### Community 37 - "Community 37"
 Cohesion: 0.24
 Nodes (2): DocumentoMongoRepository, DocumentoRepository
 
-### Community 37 - "Community 37"
+### Community 38 - "Community 38"
 Cohesion: 0.27
 Nodes (2): SalaTelemedicinaMongoRepository, SalaTelemedicinaRepository
 
-### Community 38 - "Community 38"
+### Community 39 - "Community 39"
 Cohesion: 0.31
 Nodes (1): PacientesController
 
-### Community 39 - "Community 39"
+### Community 40 - "Community 40"
 Cohesion: 0.33
 Nodes (1): ProntuariosController
 
-### Community 40 - "Community 40"
+### Community 41 - "Community 41"
 Cohesion: 0.18
 Nodes (8): { AppConfigService }, arquivo, distConfig, googleSecretsStub, { Logger }, raiz, require, { vars, linhasInvalidas }
 
-### Community 41 - "Community 41"
+### Community 42 - "Community 42"
 Cohesion: 0.18
 Nodes (1): SuperAdminController
 
-### Community 42 - "Community 42"
+### Community 43 - "Community 43"
 Cohesion: 0.33
 Nodes (3): ClinicAdminContext, ClinicasService, OnboardingContext
 
-### Community 43 - "Community 43"
+### Community 44 - "Community 44"
 Cohesion: 0.44
 Nodes (1): FinanceiroService
 
-### Community 44 - "Community 44"
+### Community 45 - "Community 45"
 Cohesion: 0.20
 Nodes (6): Agendamento, BloqueioAgenda, StatusAgendamento, TipoAgendamento, SalaTelemedicina, StatusSala
 
-### Community 45 - "Community 45"
+### Community 46 - "Community 46"
 Cohesion: 0.20
 Nodes (9): ArquivoProntuarioDto, ArquivosProntuarioDto, AvaliacaoDto, ExameSegmentarDto, ObjetivoDto, PlanoDto, RegistroPsicologicoDto, SinaisVitaisDto (+1 more)
 
-### Community 46 - "Community 46"
+### Community 47 - "Community 47"
 Cohesion: 0.27
 Nodes (2): LancamentoMongoRepository, LancamentoRepository
 
-### Community 47 - "Community 47"
+### Community 48 - "Community 48"
 Cohesion: 0.36
 Nodes (1): TelemedicinaController
 
-### Community 48 - "Community 48"
+### Community 49 - "Community 49"
 Cohesion: 0.33
 Nodes (2): DocumentStorage, S3DocumentStorageService
-
-### Community 49 - "Community 49"
-Cohesion: 0.36
-Nodes (1): IaClinicaService
 
 ### Community 50 - "Community 50"
 Cohesion: 0.44
@@ -978,37 +978,37 @@ Nodes (1): ThrottlerGuard
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 27`** (2 nodes): `UserMongoRepository`, `UserRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 29`** (1 nodes): `PacienteCryptoService`
+- **Thin community `Community 29`** (1 nodes): `IaClinicaService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 30`** (1 nodes): `AgendamentosController`
+- **Thin community `Community 30`** (1 nodes): `PacienteCryptoService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 31`** (1 nodes): `AnalyticsController`
+- **Thin community `Community 31`** (1 nodes): `AgendamentosController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 32`** (1 nodes): `SuperAdminService`
+- **Thin community `Community 32`** (1 nodes): `AnalyticsController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 34`** (1 nodes): `PsicologiaFinanceiroService`
+- **Thin community `Community 33`** (1 nodes): `SuperAdminService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 35`** (2 nodes): `ClinicaMongoRepository`, `ClinicaRepository`
+- **Thin community `Community 35`** (1 nodes): `PsicologiaFinanceiroService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 36`** (2 nodes): `DocumentoMongoRepository`, `DocumentoRepository`
+- **Thin community `Community 36`** (2 nodes): `ClinicaMongoRepository`, `ClinicaRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 37`** (2 nodes): `SalaTelemedicinaMongoRepository`, `SalaTelemedicinaRepository`
+- **Thin community `Community 37`** (2 nodes): `DocumentoMongoRepository`, `DocumentoRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 38`** (1 nodes): `PacientesController`
+- **Thin community `Community 38`** (2 nodes): `SalaTelemedicinaMongoRepository`, `SalaTelemedicinaRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 39`** (1 nodes): `ProntuariosController`
+- **Thin community `Community 39`** (1 nodes): `PacientesController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 41`** (1 nodes): `SuperAdminController`
+- **Thin community `Community 40`** (1 nodes): `ProntuariosController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 43`** (1 nodes): `FinanceiroService`
+- **Thin community `Community 42`** (1 nodes): `SuperAdminController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 46`** (2 nodes): `LancamentoMongoRepository`, `LancamentoRepository`
+- **Thin community `Community 44`** (1 nodes): `FinanceiroService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 47`** (1 nodes): `TelemedicinaController`
+- **Thin community `Community 47`** (2 nodes): `LancamentoMongoRepository`, `LancamentoRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 48`** (2 nodes): `DocumentStorage`, `S3DocumentStorageService`
+- **Thin community `Community 48`** (1 nodes): `TelemedicinaController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 49`** (1 nodes): `IaClinicaService`
+- **Thin community `Community 49`** (2 nodes): `DocumentStorage`, `S3DocumentStorageService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 50`** (1 nodes): `NotificacoesService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
