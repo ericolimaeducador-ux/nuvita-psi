@@ -53,6 +53,7 @@ export function AgendaPage() {
   const { user } = useAuth();
   const [dia, setDia] = useState(dayjs().format('YYYY-MM-DD'));
   const [open, setOpen] = useState(false);
+  const [agParaCancelar, setAgParaCancelar] = useState<Agendamento | null>(null);
   const [visao, setVisao] = useState<'calendario' | 'lista'>('calendario');
 
   // Form state
@@ -97,6 +98,7 @@ export function AgendaPage() {
       v.acao === 'cancelar' ? agendaApi.cancelar(v.id) : agendaApi.concluir(v.id),
     onSuccess: () => {
       toast.success('Agendamento atualizado.');
+      setAgParaCancelar(null);
       void qc.invalidateQueries({ queryKey: ['agenda'] });
     },
     onError: (e) => toast.error('Erro', apiErrorMessage(e)),
@@ -254,7 +256,7 @@ export function AgendaPage() {
                               )}
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
-                                onClick={() => acaoMut.mutate({ id: a.id, acao: 'cancelar' })}
+                                onClick={() => setAgParaCancelar(a)}
                               >
                                 Cancelar
                               </DropdownMenuItem>
@@ -276,6 +278,35 @@ export function AgendaPage() {
         </CardContent>
       </Card>
       )}
+
+      <Dialog open={!!agParaCancelar} onOpenChange={(o) => { if (!o) setAgParaCancelar(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancelar agendamento</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Cancelar o agendamento de{' '}
+            <span className="font-medium text-foreground">
+              {agParaCancelar?.pacienteNome
+                ?? (agParaCancelar ? nomePorPacienteId.get(agParaCancelar.pacienteId) : null)
+                ?? agParaCancelar?.pacienteId}
+            </span>{' '}
+            em {agParaCancelar && dayjs(agParaCancelar.dataHoraInicio).format('DD/MM/YYYY [às] HH:mm')}?
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAgParaCancelar(null)} disabled={acaoMut.isPending}>
+              Voltar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => agParaCancelar && acaoMut.mutate({ id: agParaCancelar.id, acao: 'cancelar' })}
+              disabled={acaoMut.isPending}
+            >
+              {acaoMut.isPending ? 'Cancelando…' : 'Cancelar agendamento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
         <DialogContent className="max-w-md">
