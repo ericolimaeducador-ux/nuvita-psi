@@ -1,6 +1,7 @@
 import { api } from './client';
 import type {
   Agendamento,
+  DecisaoUsoIA,
   Documento,
   Lancamento,
   LinhaTerapeutica,
@@ -298,9 +299,17 @@ export interface GerarPrescricaoPayload {
 
 export const iaClinicaApi = {
   sugerirAbordagem: (payload: SugerirAbordagemPayload) =>
-    api.post<{ sugestao: string }>('/ia-clinica/sugerir-abordagem', payload).then((r) => r.data),
+    api
+      .post<{ sugestao: string; registroUsoIaId: string }>('/ia-clinica/sugerir-abordagem', payload)
+      .then((r) => r.data),
   gerarPrescricao: (payload: GerarPrescricaoPayload) =>
-    api.post<{ prescricao: string }>('/ia-clinica/gerar-prescricao', payload).then((r) => r.data),
+    api
+      .post<{ prescricao: string; registroUsoIaId: string }>('/ia-clinica/gerar-prescricao', payload)
+      .then((r) => r.data),
+  registrarDecisao: (registroUsoIaId: string, decisao: DecisaoUsoIA) =>
+    api
+      .post<void>(`/ia-clinica/registros/${registroUsoIaId}/decisao`, { decisao })
+      .then((r) => r.data),
 };
 
 // ---------- Super Admin ----------

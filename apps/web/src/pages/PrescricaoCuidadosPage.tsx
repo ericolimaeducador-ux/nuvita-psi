@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { ArrowLeft, FileText, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, FileText, Sparkles, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +17,7 @@ import { useAuth } from '@/auth/AuthContext';
 import { pacientesApi, iaClinicaApi } from '@/api/resources';
 import { apiErrorMessage } from '@/api/client';
 import { SUGESTOES_CUIDADOS_POR_LINHA } from '@/lib/linhaTerapeutica';
-import { LINHA_TERAPEUTICA_LABEL } from '@/types';
+import { DecisaoUsoIA, LINHA_TERAPEUTICA_LABEL } from '@/types';
 
 const CHECKLIST_FIXO = [
   'Exercícios de respiração/relaxamento',
@@ -34,6 +34,8 @@ export function PrescricaoCuidadosPage() {
   const [checklist, setChecklist] = useState<string[]>([]);
   const [textoLivre, setTextoLivre] = useState('');
   const [crp, setCrp] = useState('');
+  // Rascunho da IA aguardando decisão do psicólogo (null = sem sugestão pendente).
+  const [sugestaoIa, setSugestaoIa] = useState<{ texto: string; registroUsoIaId: string } | null>(null);
 
   const pacienteQ = useQuery({
     queryKey: ['paciente', pacienteId],
@@ -62,8 +64,23 @@ export function PrescricaoCuidadosPage() {
         checklistSelecionado: checklist.length ? checklist : undefined,
         contextoClinico: textoLivre.trim() || undefined,
       }),
-    onSuccess: (r) => setTextoLivre((cur) => (cur.trim() ? `${cur}\n\n${r.prescricao}` : r.prescricao)),
+    onSuccess: (r) => setSugestaoIa({ texto: r.prescricao, registroUsoIaId: r.registroUsoIaId }),
     onError: (e) => toast.error('Erro ao gerar com IA', apiErrorMessage(e)),
+  });
+
+  const decisaoIaMut = useMutation({
+    mutationFn: (decisao: DecisaoUsoIA) =>
+      iaClinicaApi.registrarDecisao(sugestaoIa!.registroUsoIaId, decisao),
+    onSuccess: (_r, decisao) => {
+      if (decisao === DecisaoUsoIA.ACEITA && sugestaoIa) {
+        setTextoLivre((cur) => (cur.trim() ? `${cur}\n\n${sugestaoIa.texto}` : sugestaoIa.texto));
+      }
+      setSugestaoIa(null);
+      toast.success(
+        decisao === DecisaoUsoIA.ACEITA ? 'Sugestão adicionada às orientações.' : 'Sugestão descartada.',
+      );
+    },
+    onError: (e) => toast.error('Erro ao registrar a decisão', apiErrorMessage(e)),
   });
 
   if (modo === 'imprimir') {
@@ -164,6 +181,34 @@ export function PrescricaoCuidadosPage() {
                 A sugestão da IA é um rascunho — revise antes de imprimir.
               </p>
             </div>
+
+            {sugestaoIa && (
+              <div className="rounded-xl border border-dashed bg-muted/20 p-4 space-y-2 text-sm">
+                <Badge variant="outline" className="text-violet-600 border-violet-500/30">
+                  <Sparkles className="h-3 w-3 mr-1" /> Gerado por IA
+                </Badge>
+                <p className="whitespace-pre-wrap text-foreground">{sugestaoIa.texto}</p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button
+                    type="button" variant="secondary" size="sm"
+                    onClick={() => decisaoIaMut.mutate(DecisaoUsoIA.ACEITA)}
+                    disabled={decisaoIaMut.isPending}
+                  >
+                    {decisaoIaMut.isPending
+                      ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      : <Check className="mr-2 h-3.5 w-3.5" />}
+                    Usar esta sugestão
+                  </Button>
+                  <Button
+                    type="button" variant="ghost" size="sm"
+                    onClick={() => decisaoIaMut.mutate(DecisaoUsoIA.DESCARTADA)}
+                    disabled={decisaoIaMut.isPending}
+                  >
+                    <X className="mr-2 h-3.5 w-3.5" /> Descartar
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <Button onClick={() => setModo('imprimir')} disabled={checklist.length === 0 && !textoLivre.trim()}>
               <FileText className="mr-2 h-4 w-4" /> Gerar prescrição

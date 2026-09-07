@@ -766,3 +766,9 @@ export interface ListUsuariosResult {
   skip: number;
   limit: number;
 }
+
+// ---------- IA clínica ----------
+export enum DecisaoUsoIA {
+  ACEITA = 'ACEITA',
+  DESCARTADA = 'DESCARTADA',
+}

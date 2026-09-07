@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { Brain, CalendarPlus, ClipboardList, Copy, History, Loader2, PenLine, Sparkles, User, Video, X } from 'lucide-react';
+import { Brain, CalendarPlus, Check, ClipboardList, Copy, History, Loader2, PenLine, Sparkles, User, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,7 @@ import { apiErrorMessage } from '@/api/client';
 import { formatData, formatEndereco, linkDaSala, toItems } from '@/utils';
 import { CAMPOS_POR_LINHA } from '@/lib/linhaTerapeutica';
 import {
-  Agendamento, ModalidadeAtendimento, Paciente, Papel, Prontuario, RegistroPsicologico,
+  Agendamento, DecisaoUsoIA, ModalidadeAtendimento, Paciente, Papel, Prontuario, RegistroPsicologico,
   REGISTRO_PSICOLOGICO_CAMPOS, LINHA_TERAPEUTICA_LABEL,
   SalaTelemedicina, StatusAgendamento, StatusSala, STATUS_AGENDAMENTO_LABEL,
   TipoAgendamento, TipoAtendimento,
@@ -154,6 +154,8 @@ function RegistroSessao({
   const [reg, setReg] = useState<RegistroPsicologico>({});
   const [forcarCompleto, setForcarCompleto] = useState(false);
   const [editandoContexto, setEditandoContexto] = useState(false);
+  // Decisão registrada sobre a sugestão da IA atual (null = ainda pendente).
+  const [decisaoIa, setDecisaoIa] = useState<DecisaoUsoIA | null>(null);
   const set = (patch: Partial<RegistroPsicologico>) => setReg((r) => ({ ...r, ...patch }));
 
   useEffect(() => {
@@ -161,6 +163,7 @@ function RegistroSessao({
     setReg({ crp: user?.registroProfissional });
     setForcarCompleto(false);
     setEditandoContexto(false);
+    setDecisaoIa(null);
   }, [open, user?.registroProfissional]);
 
   const pacienteQ = useQuery({
@@ -229,8 +232,25 @@ function RegistroSessao({
         anotacoesLivres: reg.anotacoesLivres,
         numeroSessoesAnteriores: sessoes.length,
       }),
+    onSuccess: () => setDecisaoIa(null),
     onError: (e) => toast({ title: 'Erro ao sugerir abordagem', description: apiErrorMessage(e), variant: 'destructive' }),
   });
+
+  const decisaoIaMut = useMutation({
+    mutationFn: (decisao: DecisaoUsoIA) =>
+      iaClinicaApi.registrarDecisao(sugerirIaMut.data!.registroUsoIaId, decisao),
+    onSuccess: (_r, decisao) => {
+      setDecisaoIa(decisao);
+      toast({
+        title: decisao === DecisaoUsoIA.ACEITA
+          ? 'Sugestao registrada como aceita.'
+          : 'Sugestao descartada.',
+      });
+    },
+    onError: (e) => toast({ title: 'Erro ao registrar a decisao', description: apiErrorMessage(e), variant: 'destructive' }),
+  });
+
+  const sugestaoIaVisivel = !!sugerirIaMut.data && decisaoIa !== DecisaoUsoIA.DESCARTADA;
 
   const salvarM = useMutation({
     mutationFn: async (assinar: boolean) => {
@@ -318,13 +338,46 @@ function RegistroSessao({
             </p>
             <Button variant="outline" size="sm" onClick={() => sugerirIaMut.mutate()} disabled={sugerirIaMut.isPending}>
               {sugerirIaMut.isPending ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
-              {sugerirIaMut.data ? 'Gerar novamente' : 'Sugerir abordagem'}
+              {sugestaoIaVisivel ? 'Gerar novamente' : 'Sugerir abordagem'}
             </Button>
           </div>
-          {sugerirIaMut.data && (
-            <p className="whitespace-pre-wrap text-foreground">{sugerirIaMut.data.sugestao}</p>
+          {sugestaoIaVisivel && (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="text-violet-600 border-violet-500/30">
+                  <Sparkles className="h-3 w-3 mr-1" /> Gerado por IA
+                </Badge>
+                {decisaoIa === DecisaoUsoIA.ACEITA && (
+                  <Badge variant="outline" className="text-emerald-600 border-emerald-500/30">
+                    <Check className="h-3 w-3 mr-1" /> Sugestão aceita
+                  </Badge>
+                )}
+              </div>
+              <p className="whitespace-pre-wrap text-foreground">{sugerirIaMut.data!.sugestao}</p>
+              {decisaoIa === null && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button
+                    variant="secondary" size="sm"
+                    onClick={() => decisaoIaMut.mutate(DecisaoUsoIA.ACEITA)}
+                    disabled={decisaoIaMut.isPending}
+                  >
+                    {decisaoIaMut.isPending
+                      ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                      : <Check className="h-3.5 w-3.5 mr-2" />}
+                    Usar esta sugestão
+                  </Button>
+                  <Button
+                    variant="ghost" size="sm"
+                    onClick={() => decisaoIaMut.mutate(DecisaoUsoIA.DESCARTADA)}
+                    disabled={decisaoIaMut.isPending}
+                  >
+                    <X className="h-3.5 w-3.5 mr-2" /> Descartar
+                  </Button>
+                </div>
+              )}
+            </>
           )}
-          {!sugerirIaMut.data && !sugerirIaMut.isPending && (
+          {!sugestaoIaVisivel && !sugerirIaMut.isPending && (
             <p className="text-xs text-muted-foreground">
               Gera uma sugestão de técnica/condução com base no que já foi preenchido nesta sessão e na linha terapêutica do paciente. Apoio, não substitui o julgamento clínico.
             </p>
