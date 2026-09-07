@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -70,6 +71,7 @@ export function ProntuarioDetailDialog({
 }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [confirmandoAssinatura, setConfirmandoAssinatura] = useState(false);
   const q = useQuery({
     queryKey: ['prontuario', prontuarioId],
     queryFn: () => prontuariosApi.get(prontuarioId!),
@@ -79,6 +81,7 @@ export function ProntuarioDetailDialog({
     mutationFn: () => prontuariosApi.assinar(prontuarioId!),
     onSuccess: () => {
       toast.success('Prontuário assinado.');
+      setConfirmandoAssinatura(false);
       void qc.invalidateQueries({ queryKey: ['prontuario', prontuarioId] });
       void qc.invalidateQueries({ queryKey: ['prontuarios'] });
     },
@@ -103,6 +106,7 @@ export function ProntuarioDetailDialog({
   const seg = pr?.objetivo?.exameSegmentar;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -211,7 +215,7 @@ export function ProntuarioDetailDialog({
             </Button>
           )}
           {pr && !pr.assinado && (
-            <Button variant="outline" disabled={assinarMut.isPending} onClick={() => assinarMut.mutate()}>
+            <Button variant="outline" disabled={assinarMut.isPending} onClick={() => setConfirmandoAssinatura(true)}>
               <PenLine className="mr-2 h-4 w-4" /> {assinarMut.isPending ? 'Assinando...' : 'Assinar prontuário'}
             </Button>
           )}
@@ -219,5 +223,26 @@ export function ProntuarioDetailDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={confirmandoAssinatura} onOpenChange={(o) => { if (!o) setConfirmandoAssinatura(false); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Assinar prontuário</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          Depois de assinado, este prontuário não pode mais ser editado — qualquer
+          correção exigirá um addendum.
+        </p>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setConfirmandoAssinatura(false)} disabled={assinarMut.isPending}>
+            Cancelar
+          </Button>
+          <Button onClick={() => assinarMut.mutate()} disabled={assinarMut.isPending}>
+            <PenLine className="mr-2 h-4 w-4" /> {assinarMut.isPending ? 'Assinando...' : 'Assinar prontuário'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
