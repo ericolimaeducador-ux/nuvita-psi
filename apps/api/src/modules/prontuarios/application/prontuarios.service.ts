@@ -259,9 +259,7 @@ export class ProntuariosService {
   }
 
   private signatureHash(prontuario: Prontuario, medicoId: string, dataAssinatura: Date): string {
-    const secret =
-      this.configService.getConfig().prontuarioSignatureSecret ??
-      this.configService.getConfig().jwtAccessSecret;
+    const secret = this.configService.getConfig().prontuarioSignatureSecret;
     const payload = {
       prontuario: {
         clinicaId: prontuario.clinicaId,
