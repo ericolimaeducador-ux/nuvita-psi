@@ -16,6 +16,11 @@ export class DecisaoUsoIaMongoRepository implements DecisaoUsoIaRepository {
     return this.toEntity(doc.toObject() as unknown as Record<string, unknown>);
   }
 
+  async existsForRegistro(registroUsoIaId: string): Promise<boolean> {
+    const count = await this.model.countDocuments({ registroUsoIaId }).limit(1);
+    return count > 0;
+  }
+
   private toEntity(doc: Record<string, unknown>): DecisaoUsoIa {
     const { _id, ...rest } = doc as Record<string, unknown> & { _id: { toString(): string } };
     return { id: _id.toString(), ...rest } as DecisaoUsoIa;

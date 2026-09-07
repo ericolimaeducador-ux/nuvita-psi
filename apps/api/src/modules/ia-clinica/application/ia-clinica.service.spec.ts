@@ -1,10 +1,12 @@
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Papel } from '../../../../../../packages/shared/src/auth';
 import { AuditLogRepository } from '../../auth/application/ports/audit-log.repository';
 import { AuditEvent } from '../../auth/domain/audit-event.enum';
 import { AppConfigService } from '../../../common/security/config.service';
-import { TipoUsoIA } from '../domain/registro-uso-ia.enum';
+import { DecisaoUsoIA, TipoUsoIA } from '../domain/registro-uso-ia.enum';
 import { AnthropicClient } from '../infrastructure/anthropic.client';
 import { IaUsoCryptoService } from '../infrastructure/crypto/ia-uso-crypto.service';
+import { DecisaoUsoIaRepository } from './ports/decisao-uso-ia.repository';
 import { RegistroUsoIaRepository } from './ports/registro-uso-ia.repository';
 import { SugerirAbordagemDto } from './dto/sugerir-abordagem.dto';
 import { GerarPrescricaoDto } from './dto/gerar-prescricao.dto';
@@ -25,6 +27,7 @@ const context = {
 
 function makeService(overrides: {
   registros?: Partial<RegistroUsoIaRepository>;
+  decisoes?: Partial<DecisaoUsoIaRepository>;
   auditLogs?: Partial<AuditLogRepository>;
 } = {}) {
   const anthropic = {
@@ -37,8 +40,21 @@ function makeService(overrides: {
 
   const registros = {
     create: jest.fn().mockResolvedValue({ id: 'registro-1' }),
+    findByIdAndClinica: jest.fn(),
     ...overrides.registros,
   } as unknown as RegistroUsoIaRepository;
+
+  const decisoes = {
+    create: jest.fn().mockResolvedValue({
+      id: 'decisao-1',
+      registroUsoIaId: 'registro-1',
+      usuarioId: 'psi-1',
+      decisao: DecisaoUsoIA.ACEITA,
+      decididoEm: new Date('2026-09-06T12:00:00.000Z'),
+    }),
+    existsForRegistro: jest.fn().mockResolvedValue(false),
+    ...overrides.decisoes,
+  } as unknown as DecisaoUsoIaRepository;
 
   const auditLogs = {
     create: jest.fn().mockResolvedValue(undefined),
@@ -49,8 +65,8 @@ function makeService(overrides: {
     getConfig: () => ({ anthropicModel: 'claude-sonnet-5' }),
   } as unknown as AppConfigService;
 
-  const service = new IaClinicaService(anthropic, crypto, registros, auditLogs, configService);
-  return { service, anthropic, crypto, registros, auditLogs };
+  const service = new IaClinicaService(anthropic, crypto, registros, decisoes, auditLogs, configService);
+  return { service, anthropic, crypto, registros, decisoes, auditLogs };
 }
 
 describe('IaClinicaService — trilha de uso de IA', () => {
@@ -141,5 +157,111 @@ describe('IaClinicaService — trilha de uso de IA', () => {
 
     expect(anthropic.gerarTexto).not.toHaveBeenCalled();
     expect(registros.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('IaClinicaService — registro de decisão de uso de IA', () => {
+  const registro = {
+    id: 'registro-1',
+    clinicaId: 'clinica-1',
+    usuarioId: 'psi-1',
+    tipo: TipoUsoIA.SUGESTAO_ABORDAGEM,
+    modelo: 'claude-sonnet-5',
+    inputCifrado: 'x',
+    inputIv: 'x',
+    inputAuthTag: 'x',
+    outputCifrado: 'x',
+    outputIv: 'x',
+    outputAuthTag: 'x',
+    criadoEm: new Date('2026-09-06T10:00:00.000Z'),
+  };
+
+  it('registra a decisão do mesmo usuário que gerou e grava o audit log', async () => {
+    const { service, decisoes, auditLogs } = makeService({
+      registros: { findByIdAndClinica: jest.fn().mockResolvedValue(registro) },
+    });
+
+    await service.registrarDecisao('registro-1', DecisaoUsoIA.ACEITA, context);
+
+    expect(decisoes.create).toHaveBeenCalledWith({
+      registroUsoIaId: 'registro-1',
+      usuarioId: 'psi-1',
+      decisao: DecisaoUsoIA.ACEITA,
+    });
+    expect(auditLogs.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: AuditEvent.AI_SUGGESTION_DECISION_RECORDED,
+        userId: 'psi-1',
+        ip: '127.0.0.1',
+        userAgent: 'jest',
+        metadata: {
+          clinicaId: 'clinica-1',
+          registroUsoIaId: 'registro-1',
+          decisao: DecisaoUsoIA.ACEITA,
+        },
+      }),
+    );
+  });
+
+  it('registro inexistente (ou de outra clínica) → NotFoundException, não cria decisão', async () => {
+    const { service, decisoes } = makeService({
+      registros: { findByIdAndClinica: jest.fn().mockResolvedValue(null) },
+    });
+
+    await expect(
+      service.registrarDecisao('nao-existe', DecisaoUsoIA.ACEITA, context),
+    ).rejects.toThrow(NotFoundException);
+    expect(decisoes.create).not.toHaveBeenCalled();
+  });
+
+  it('decisão por usuário diferente do que gerou → ForbiddenException, não cria decisão', async () => {
+    const { service, decisoes } = makeService({
+      registros: {
+        findByIdAndClinica: jest.fn().mockResolvedValue({ ...registro, usuarioId: 'outro-psi' }),
+      },
+    });
+
+    await expect(
+      service.registrarDecisao('registro-1', DecisaoUsoIA.ACEITA, context),
+    ).rejects.toThrow(ForbiddenException);
+    expect(decisoes.create).not.toHaveBeenCalled();
+  });
+
+  it('já existe decisão para o registro → ConflictException, não cria outra', async () => {
+    const { service, decisoes } = makeService({
+      registros: { findByIdAndClinica: jest.fn().mockResolvedValue(registro) },
+      decisoes: { existsForRegistro: jest.fn().mockResolvedValue(true) },
+    });
+
+    await expect(
+      service.registrarDecisao('registro-1', DecisaoUsoIA.ACEITA, context),
+    ).rejects.toThrow(ConflictException);
+    expect(decisoes.create).not.toHaveBeenCalled();
+  });
+
+  it('corrida no índice único: create lança duplicate key → ConflictException', async () => {
+    const err = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
+    const { service } = makeService({
+      registros: { findByIdAndClinica: jest.fn().mockResolvedValue(registro) },
+      decisoes: {
+        existsForRegistro: jest.fn().mockResolvedValue(false),
+        create: jest.fn().mockRejectedValue(err),
+      },
+    });
+
+    await expect(
+      service.registrarDecisao('registro-1', DecisaoUsoIA.ACEITA, context),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('sem clinicaId no contexto → lança e não toca em nada', async () => {
+    const { service, registros, decisoes } = makeService();
+    const semClinica = { ...context, user: { ...context.user, clinicaId: undefined } };
+
+    await expect(
+      service.registrarDecisao('registro-1', DecisaoUsoIA.ACEITA, semClinica),
+    ).rejects.toThrow();
+    expect(registros.findByIdAndClinica).not.toHaveBeenCalled();
+    expect(decisoes.create).not.toHaveBeenCalled();
   });
 });

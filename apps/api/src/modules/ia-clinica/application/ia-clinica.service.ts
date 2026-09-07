@@ -1,4 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthTokenPayload } from '../../../../../../packages/shared/src/auth';
 import { AUDIT_LOG_REPOSITORY } from '../../auth/auth.constants';
 import { AuditLogRepository } from '../../auth/application/ports/audit-log.repository';
@@ -6,10 +12,12 @@ import { AuditEvent } from '../../auth/domain/audit-event.enum';
 import { AppConfigService } from '../../../common/security/config.service';
 import { resolveTenantClinicaId } from '../../../common/tenancy/resolve-clinica-id';
 import { LinhaTerapeutica } from '../../pacientes/domain/paciente.entity';
-import { TipoUsoIA } from '../domain/registro-uso-ia.enum';
+import { DecisaoUsoIa } from '../domain/decisao-uso-ia.entity';
+import { DecisaoUsoIA, TipoUsoIA } from '../domain/registro-uso-ia.enum';
 import { AnthropicClient } from '../infrastructure/anthropic.client';
 import { IaUsoCryptoService } from '../infrastructure/crypto/ia-uso-crypto.service';
-import { REGISTRO_USO_IA_REPOSITORY } from '../ia-clinica.constants';
+import { DECISAO_USO_IA_REPOSITORY, REGISTRO_USO_IA_REPOSITORY } from '../ia-clinica.constants';
+import { DecisaoUsoIaRepository } from './ports/decisao-uso-ia.repository';
 import { RegistroUsoIaRepository } from './ports/registro-uso-ia.repository';
 import { SugerirAbordagemDto } from './dto/sugerir-abordagem.dto';
 import { GerarPrescricaoDto } from './dto/gerar-prescricao.dto';
@@ -49,6 +57,7 @@ export class IaClinicaService {
     private readonly anthropic: AnthropicClient,
     private readonly crypto: IaUsoCryptoService,
     @Inject(REGISTRO_USO_IA_REPOSITORY) private readonly registros: RegistroUsoIaRepository,
+    @Inject(DECISAO_USO_IA_REPOSITORY) private readonly decisoes: DecisaoUsoIaRepository,
     @Inject(AUDIT_LOG_REPOSITORY) private readonly auditLogs: AuditLogRepository,
     private readonly configService: AppConfigService,
   ) {}
@@ -77,6 +86,65 @@ export class IaClinicaService {
       this.promptPrescricao(dto),
     );
     return { prescricao: texto, registroUsoIaId };
+  }
+
+  /**
+   * Registra a decisão humana (aceitar/descartar) sobre uma sugestão da IA.
+   *
+   * Não repúdio: só o mesmo profissional que gerou a sugestão pode decidir
+   * sobre ela. Ordem das checagens: existe (404) → é do usuário (403) → ainda
+   * não foi decidido (409). O `existsForRegistro` é fast-path; a garantia real
+   * contra corrida é o índice único de `decisoes_uso_ia` — um `E11000` do
+   * `create` também vira 409.
+   */
+  async registrarDecisao(
+    registroUsoIaId: string,
+    decisao: DecisaoUsoIA,
+    context: IaClinicaRequestContext,
+  ): Promise<DecisaoUsoIa> {
+    const clinicaId = resolveTenantClinicaId(context.user);
+
+    const registro = await this.registros.findByIdAndClinica(registroUsoIaId, clinicaId);
+    if (!registro) {
+      throw new NotFoundException('Registro de uso de IA nao encontrado.');
+    }
+    if (registro.usuarioId !== context.user.sub) {
+      throw new ForbiddenException(
+        'Somente o profissional que gerou a sugestao pode registrar a decisao sobre ela.',
+      );
+    }
+    if (await this.decisoes.existsForRegistro(registroUsoIaId)) {
+      throw new ConflictException('Decisao de uso de IA ja registrada.');
+    }
+
+    let decisaoRegistrada: DecisaoUsoIa;
+    try {
+      decisaoRegistrada = await this.decisoes.create({
+        registroUsoIaId,
+        usuarioId: context.user.sub,
+        decisao,
+      });
+    } catch (erro) {
+      if (this.ehErroDeChaveDuplicada(erro)) {
+        throw new ConflictException('Decisao de uso de IA ja registrada.');
+      }
+      throw erro;
+    }
+
+    await this.auditLogs.create({
+      event: AuditEvent.AI_SUGGESTION_DECISION_RECORDED,
+      userId: context.user.sub,
+      email: context.user.email,
+      ip: context.ip,
+      userAgent: context.userAgent,
+      metadata: { clinicaId, registroUsoIaId, decisao },
+    });
+
+    return decisaoRegistrada;
+  }
+
+  private ehErroDeChaveDuplicada(erro: unknown): boolean {
+    return typeof erro === 'object' && erro !== null && (erro as { code?: number }).code === 11000;
   }
 
   /**
