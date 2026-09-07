@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthTokenPayload, Papel } from '../../../../../../packages/shared/src/auth';
@@ -11,6 +11,7 @@ import { TenantRequiredGuard } from '../../../common/tenancy/tenant-required.gua
 import { IaClinicaRequestContext, IaClinicaService } from '../application/ia-clinica.service';
 import { SugerirAbordagemDto } from '../application/dto/sugerir-abordagem.dto';
 import { GerarPrescricaoDto } from '../application/dto/gerar-prescricao.dto';
+import { RegistrarDecisaoDto } from '../application/dto/registrar-decisao.dto';
 
 // Só o psicólogo aciona a IA — mesmo padrão de acesso dos documentos
 // clínicos. Throttle apertado: são chamadas pagas a um provedor externo,
@@ -39,6 +40,20 @@ export class IaClinicaController {
     @Req() request: Request,
   ) {
     return this.service.gerarPrescricao(dto, this.contexto(request, user));
+  }
+
+  @Post('registros/:id/decisao')
+  registrarDecisao(
+    @Param('id') registroUsoIaId: string,
+    @Body() dto: RegistrarDecisaoDto,
+    @CurrentUser() user: AuthTokenPayload,
+    @Req() request: Request,
+  ) {
+    return this.service.registrarDecisao(
+      registroUsoIaId,
+      dto.decisao,
+      this.contexto(request, user),
+    );
   }
 
   private contexto(request: Request, user: AuthTokenPayload): IaClinicaRequestContext {
