@@ -137,3 +137,22 @@ chaves desta sessão.
 passou por canal de IA deve ser tratada como potencialmente comprometida.
 Considerar rotação futura no console do Cloudflare R2 — mesmo padrão do achado
 M6 (`ANTHROPIC_API_KEY`) em `PRODUCTION-BACKEND.md §2`.
+
+---
+
+## 7. `nuvita-psi-builder@` órfã após migração pra build no runner
+
+**Achado:** ao migrar o `deploy-api.yml` pra Opção C (2026-09-08).
+
+Criada na Parte B do C1 pro `--build-service-account` do caminho
+`gcloud run deploy --source` / Cloud Build. A Opção C passou a buildar a
+imagem no runner do GitHub Actions (`docker build` + push pro Artifact
+Registry) e removeu o Cloud Build do desenho, então a SA
+`nuvita-psi-builder@nuvita-499800.iam.gserviceaccount.com` ficou sem uso:
+
+- `roles/run.builder` no projeto — sem referência.
+- binding `roles/iam.serviceAccountUser` que `nuvita-psi-deployer@` tinha
+  nela — sem uso.
+
+**Não bloqueante.** Decidir: deletar a SA + o binding, ou manter caso um dia
+se volte pro `--source`/Cloud Build. Nada mais no projeto depende dela.
