@@ -74,10 +74,9 @@ const REQUIRED_SECRETS = [
   },
   {
     name: 'patient-data-hash-key',
-    description: 'Hash key for patient data (base64-encoded 32 bytes, optional)',
+    description: 'Dedicated HMAC key for patient CPF hashing (base64-encoded 32 bytes) — separate secret domain from the encryption key',
     example: '<base64-encoded-32-bytes>',
     generate: () => crypto.randomBytes(32).toString('base64'),
-    optional: true,
   },
   {
     name: 'document-storage-bucket',

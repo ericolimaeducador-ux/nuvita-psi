@@ -16,6 +16,7 @@ function configValida(overrides: Partial<AppConfig> = {}): AppConfig {
     jwtRefreshSecret: FORTE_B,
     bcryptRounds: 12,
     patientDataEncryptionKey: 'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=',
+    patientDataHashKey: 'YmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmI=',
     documentStorageBucket: 'nuvita-docs',
     documentStorageRegion: 'auto',
     documentStorageEndpoint: 'https://storage.example.com',
@@ -111,7 +112,7 @@ describe('validarForcaDosSegredos', () => {
 
   it('ignora segredo opcional ausente', () => {
     const { erros } = validarForcaDosSegredos(
-      configValida({ anthropicApiKey: undefined, patientDataHashKey: undefined }),
+      configValida({ anthropicApiKey: undefined }),
     );
 
     expect(erros).toHaveLength(0);

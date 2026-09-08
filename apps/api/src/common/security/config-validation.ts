@@ -27,7 +27,7 @@ const PLACEHOLDERS = new Set([
   'change-me-access-secret-min-32-chars',
   'change-me-refresh-secret-min-32-chars',
   'your-base64-encoded-32-bytes-here',
-  'your-optional-base64-encoded-32-bytes',
+  'your-second-base64-encoded-32-bytes-here',
   'long-random-secret-for-digital-signatures',
   'change-in-production',
   'your-access-key-id',

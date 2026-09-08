@@ -54,7 +54,7 @@ export interface AppConfig {
 
   // Patient Data Encryption (LGPD/HIPAA)
   patientDataEncryptionKey: string;
-  patientDataHashKey?: string;
+  patientDataHashKey: string;
 
   // AI usage audit trail — encryption of stored AI input/output.
   // Own secret domain, never PATIENT_DATA_ENCRYPTION_KEY. Presence is required
@@ -209,7 +209,7 @@ export class AppConfigService {
         this.getSecretOrThrow('jwt-access-secret'),
         this.getSecretOrThrow('jwt-refresh-secret'),
         this.getSecretOrThrow('patient-data-encryption-key'),
-        this.getSecretOrDefault('patient-data-hash-key', undefined),
+        this.getSecretOrThrow('patient-data-hash-key'),
         this.getSecretOrThrow('ia-uso-encryption-key'),
         this.getSecretOrThrow('document-storage-bucket'),
         this.getSecretOrThrow('document-storage-region'),
@@ -300,6 +300,7 @@ export class AppConfigService {
       'JWT_ACCESS_SECRET',
       'JWT_REFRESH_SECRET',
       'PATIENT_DATA_ENCRYPTION_KEY',
+      'PATIENT_DATA_HASH_KEY',
       'IA_USO_ENCRYPTION_KEY',
       'DOCUMENT_STORAGE_BUCKET',
       'DOCUMENT_STORAGE_REGION',
@@ -330,7 +331,7 @@ export class AppConfigService {
       jwtRefreshSecret: process.env.JWT_REFRESH_SECRET!,
       bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
       patientDataEncryptionKey: process.env.PATIENT_DATA_ENCRYPTION_KEY!,
-      patientDataHashKey: process.env.PATIENT_DATA_HASH_KEY,
+      patientDataHashKey: process.env.PATIENT_DATA_HASH_KEY!,
       iaUsoEncryptionKey: process.env.IA_USO_ENCRYPTION_KEY!,
       documentStorageBucket: process.env.DOCUMENT_STORAGE_BUCKET!,
       documentStorageRegion: process.env.DOCUMENT_STORAGE_REGION!,

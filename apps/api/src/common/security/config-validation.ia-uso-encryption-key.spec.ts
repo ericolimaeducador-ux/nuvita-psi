@@ -23,6 +23,7 @@ function configValida(overrides: Partial<AppConfig> = {}): AppConfig {
     jwtRefreshSecret: FORTE_B,
     bcryptRounds: 12,
     patientDataEncryptionKey: 'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=',
+    patientDataHashKey: 'YmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmI=',
     documentStorageBucket: 'nuvita-docs',
     documentStorageRegion: 'auto',
     documentStorageEndpoint: 'https://storage.example.com',
