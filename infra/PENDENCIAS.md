@@ -30,7 +30,12 @@ deveria ser o mais protegido de todos.
 ## 2. Confirmação antes de assinar prontuário / cancelar agendamento + fallback de segredo entre domínios
 
 **FEITO** — branch `fix/confirmacoes-e-fallback-secrets` (a partir de
-`hardening/aplica-auditoria-2026-08-08`), 2026-09-07. 4 commits:
+`hardening/aplica-auditoria-2026-08-08`), 2026-09-07. 4 commits.
+
+**Portão de revisão: APROVADO** (2026-09-08) — Dev1/Dev2/Dev3 + Conselho de
+Design, todos [Aprovado]. Não bloqueia a branch. Pendência antes de produção:
+`PATIENT_DATA_HASH_KEY` provisionada em todo `.env` local + Secret Manager de
+produção antes do 1º deploy.
 
 - **`6912a0d` — `apps/web/src/components/ProntuarioDialogs.tsx`**: botão
   "Assinar prontuário" agora abre Dialog de confirmação (ação irreversível).
@@ -56,13 +61,15 @@ setup de env de novo após este commit**: gerar um valor de 32 bytes
 variables: PATIENT_DATA_HASH_KEY`). Gere com
 `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
 
-### Teste pré-existente que ficou obsoleto (remoção manual do usuário)
+### Teste pré-existente ajustado (autorizado pelo usuário)
 
-`apps/api/src/common/security/config-validation.spec.ts` — `configValida()`
-não monta mais um `AppConfig` válido sem `patientDataHashKey`, e o caso
-`it('ignora segredo opcional ausente')` (linha ~112) trata
-`patientDataHashKey: undefined` como válido, o que agora contradiz a regra.
-O agente não tocou no ficheiro (regra `persisted-tester`).
+`apps/api/src/common/security/config-validation.spec.ts` — o `configValida()`
+foi ajustado no commit `fix(secrets)` para montar um `AppConfig` válido com
+`patientDataHashKey`. O caso `it('ignora segredo opcional ausente')` foi
+renomeado para `it('ignora anthropicApiKey ausente')` (rename só do título,
+sem reescrita), já que `anthropicApiKey` é o único segredo opcional coberto
+por ele. Rename autorizado explicitamente pelo usuário (exceção à regra
+`persisted-tester`), commit `test(config)` separado.
 
 Não passou pelo gate de feature (`all-for-harness.md`) — correção de
 comportamento existente, sem schema/endpoint/domínio novo.

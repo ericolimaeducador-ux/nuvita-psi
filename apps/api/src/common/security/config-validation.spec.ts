@@ -110,7 +110,7 @@ describe('validarForcaDosSegredos', () => {
     expect(avisos).toContainEqual(expect.stringContaining('ALLOW_PUBLIC_REGISTRATION'));
   });
 
-  it('ignora segredo opcional ausente', () => {
+  it('ignora anthropicApiKey ausente', () => {
     const { erros } = validarForcaDosSegredos(
       configValida({ anthropicApiKey: undefined }),
     );
