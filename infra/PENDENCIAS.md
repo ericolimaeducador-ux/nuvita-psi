@@ -86,6 +86,28 @@ atualizar a regra para bater com a prática, ou migrar os módulos de propósito
 
 ---
 
+## 5. Segredo obrigatório: `?` no tipo vs. obrigatório só no loader
+
+Dois commits aprovados separadamente trataram "segredo obrigatório" de formas
+opostas em `apps/api/src/common/security/config.service.ts` (`interface
+AppConfig`):
+
+- `iaUsoEncryptionKey?: string` — opcional no tipo, presença exigida só no
+  loader (`requiredVars` / `getSecretOrThrow`). A feature de IA fez assim para
+  não editar o spec protegido (`config-validation.spec.ts`, regra
+  `persisted-tester`).
+- `patientDataHashKey: string` — obrigatório no próprio tipo; o `fix(secrets)`
+  foi na direção oposta e editou o spec (com autorização explícita do usuário).
+
+Não é bug: a obrigatoriedade real está no loader nos dois casos. É divergência
+de estilo. Decisão separada: padronizar num dos dois padrões (tipo sempre
+reflete a obrigatoriedade, ou tipo sempre opcional + loader como única
+autoridade) e alinhar os campos existentes. Achado ao resolver o conflito de
+rebase da branch `fix/confirmacoes-e-fallback-secrets` sobre a feature de IA
+(2026-09-08).
+
+---
+
 ## 4. Rigor de teste de schema/repositório (projeto inteiro)
 
 A suíte `apps/api` não tem camada de banco (real nem in-memory). Hooks de
