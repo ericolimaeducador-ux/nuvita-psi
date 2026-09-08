@@ -120,3 +120,20 @@ imutabilidade e índices únicos são confiados por inspeção em todos os módu
 MongoDB in-memory é decisão de infraestrutura de CI, item próprio e bancado —
 não encaixar de lado numa feature. (Também em `my_docs/tdd-feature-ai-usage-audit-trail.md`
 §14, linha 6.)
+
+---
+
+## 6. Credenciais do R2 (`nuvita-psi-documentos`) expostas em conversa de IA
+
+**Achado:** durante o provisionamento do 1º deploy do nuvita-psi (2026-09-08).
+
+`DOCUMENT_STORAGE_ACCESS_KEY_ID` e `DOCUMENT_STORAGE_SECRET_ACCESS_KEY` do
+bucket R2 `nuvita-psi-documentos` passaram pelo chat do usuário com Claude.ai
+antes de serem aplicadas ao `apps/api/.env.production` — decisão consciente do
+usuário, não seguiu o mesmo protocolo "gerar/colar só na máquina" das outras
+chaves desta sessão.
+
+**Baixa urgência, não bloqueante.** É rastro de decisão: uma credencial que
+passou por canal de IA deve ser tratada como potencialmente comprometida.
+Considerar rotação futura no console do Cloudflare R2 — mesmo padrão do achado
+M6 (`ANTHROPIC_API_KEY`) em `PRODUCTION-BACKEND.md §2`.

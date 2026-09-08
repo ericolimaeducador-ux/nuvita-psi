@@ -73,6 +73,8 @@ jobs:
             --source . \
             --project "${{ secrets.GCP_PROJECT_ID }}" \
             --region "$REGION" \
+            --service-account nuvita-psi-api-runtime@nuvita-499800.iam.gserviceaccount.com \
+            --build-service-account nuvita-psi-builder@nuvita-499800.iam.gserviceaccount.com \
             --allow-unauthenticated \
             --env-vars-file cloudrun.env.yaml \
             --quiet
