@@ -10,20 +10,24 @@ para dívida de dependências / CVEs).
 
 **Achado:** durante a Fase 4 de `feature-ai-usage-audit-trail` (2026-09-06).
 
-`apps/api/src/modules/auth/infrastructure/mongo/audit-log.schema.ts` registra
+**FECHADO** — branch `fix/audit-log-immutability-gap`, 2026-09-08.
+
+`apps/api/src/modules/auth/infrastructure/mongo/audit-log.schema.ts` registrava
 pre-hooks de imutabilidade só para `updateOne`, `findOneAndUpdate`,
-`updateMany`, `deleteOne`, `deleteMany` — **falta `pre('findOneAndDelete')`**.
+`updateMany`, `deleteOne`, `deleteMany` — faltava `pre('findOneAndDelete')`.
+Um `Model.findOneAndDelete()` direto contra `audit_logs` não era bloqueado.
 
-O padrão completo de 6 hooks é o usado em `observacoes-paciente`,
-`testes-psicologicos` e agora `registros_uso_ia` / `decisoes_uso_ia`. `audit_logs`
-é a coleção de trilha de auditoria mais crítica do sistema e é a única com essa
-lacuna: hoje um `Model.findOneAndDelete()` direto contra `audit_logs` não seria
-bloqueado pelo schema.
-
-**Fix:** mecânico — 1 linha, mesmo padrão dos outros 5 hooks
-(`AuditLogSchema.pre('findOneAndDelete', rejectAuditLogMutation)`). Mesma
-categoria do achado anterior em `testes-psicologicos`, mas no módulo que
-deveria ser o mais protegido de todos.
+- Adicionado `AuditLogSchema.pre('findOneAndDelete', rejectAuditLogMutation)`
+  (mesmo `rejectAuditLogMutation` e mensagem dos outros 5). Agora 6 hooks,
+  igual a `observacoes-paciente`, `testes-psicologicos`, `registros_uso_ia` e
+  `decisoes_uso_ia`.
+- Criado `audit-log.schema.spec.ts` (formato no-DB de
+  `registro-uso-ia.schema.spec.ts` / `decisao-uso-ia.schema.spec.ts` —
+  inspeção via API interna do Mongoose, sem `mongodb-memory-server`),
+  cobrindo os 6 hooks, imutabilidade dos campos, default do timestamp e o
+  índice de tenant. Era o schema mais crítico do sistema e o único sem
+  nenhum teste. Não fecha o item 4 (segue sem camada de banco), mas dá
+  regressão de definição a este schema.
 
 ---
 
