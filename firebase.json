@@ -1,15 +1,27 @@
 {
-  "hosting": {
-    "public": "infra/firebase-public",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [
-      {
-        "source": "**",
-        "run": {
-          "serviceId": "nuvita-psi-api",
-          "region": "southamerica-east1"
+  "hosting": [
+    {
+      "target": "web",
+      "public": "apps/web/dist",
+      "cleanUrls": true,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "**", "destination": "/index.html" }
+      ]
+    },
+    {
+      "target": "api",
+      "public": "infra/firebase-public",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        {
+          "source": "**",
+          "run": {
+            "serviceId": "nuvita-psi-api",
+            "region": "southamerica-east1"
+          }
         }
-      }
-    ]
-  }
+      ]
+    }
+  ]
 }

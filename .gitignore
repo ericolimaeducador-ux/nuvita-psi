@@ -29,3 +29,7 @@ Thumbs.db
 # INPI – documentos particulares de registro e pacotes gerados para depósito
 docs/inpi/
 inpi-deposito/
+
+# Firebase Hosting – cache local de deploy (hashes/versões); estado por máquina.
+# firebase.json e .firebaserc SÃO versionados; só o cache .firebase/ fica de fora.
+.firebase/
