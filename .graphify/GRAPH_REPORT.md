@@ -1,25 +1,25 @@
-# Graph Report - .  (2026-09-08)
+# Graph Report - .  (2026-09-09)
 
 ## Corpus Check
-- 355 files · ~119.178 words
+- 356 files · ~120.248 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1714 nodes · 2895 edges · 231 communities detected
+- 1715 nodes · 2898 edges · 231 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 838 · imports: 714 · method: 515 · imports_from: 432 · calls: 356 · implements: 32 · inherits: 8
+- Edge kinds: contains: 839 · imports: 714 · method: 515 · imports_from: 432 · calls: 358 · implements: 32 · inherits: 8
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 355 · Candidates: 396
-- Excluded: 99 untracked · 57895 ignored · 11 sensitive · 0 missing committed
+- Included files: 356 · Candidates: 397
+- Excluded: 99 untracked · 57899 ignored · 11 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `a6a12e5`
+- Built from Git commit: `ea68a71`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `PacienteMongoRepository` - 26 edges
@@ -252,36 +252,36 @@ Cohesion: 0.22
 Nodes (4): NotificacaoWorker, OnModuleDestroy, OnModuleInit, SendJobData
 
 ### Community 53 - "Community 53"
+Cohesion: 0.28
+Nodes (8): bcrypt, EMAIL, fail(), hostDaUri(), main(), require, ROUNDS, speakeasy
+
+### Community 54 - "Community 54"
 Cohesion: 0.39
 Nodes (5): DocumentoRequestContext, EXTENSAO_POR_MIME, DocumentStorage, PresignedUploadInput, PresignedUploadOutput
 
-### Community 54 - "Community 54"
+### Community 55 - "Community 55"
 Cohesion: 0.25
 Nodes (7): CanalNotificacao, ConteudoNotificacao, ErroNotificacao, Notificacao, PreferenciaNotificacao, StatusNotificacao, TipoNotificacao
 
-### Community 55 - "Community 55"
+### Community 56 - "Community 56"
 Cohesion: 0.25
 Nodes (7): ConsentimentoLGPD, Convenio, Endereco, LinhaTerapeutica, Paciente, ProjetoPaciente, Sexo
 
-### Community 56 - "Community 56"
+### Community 57 - "Community 57"
 Cohesion: 0.32
 Nodes (4): EnqueueNotificacaoInput, NotificacaoQueue, BullMqNotificacaoQueueService, NotificacaoQueue
 
-### Community 57 - "Community 57"
+### Community 58 - "Community 58"
 Cohesion: 0.46
 Nodes (1): AuthController
 
-### Community 58 - "Community 58"
+### Community 59 - "Community 59"
 Cohesion: 0.43
 Nodes (1): DocumentosController
 
-### Community 59 - "Community 59"
+### Community 60 - "Community 60"
 Cohesion: 0.43
 Nodes (1): PsicologiaFinanceiroController
-
-### Community 60 - "Community 60"
-Cohesion: 0.25
-Nodes (5): bcrypt, EMAIL, require, ROUNDS, speakeasy
 
 ### Community 61 - "Community 61"
 Cohesion: 0.29
@@ -1018,11 +1018,11 @@ Nodes (1): ThrottlerGuard
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 51`** (1 nodes): `FinanceiroController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 57`** (1 nodes): `AuthController`
+- **Thin community `Community 58`** (1 nodes): `AuthController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 58`** (1 nodes): `DocumentosController`
+- **Thin community `Community 59`** (1 nodes): `DocumentosController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 59`** (1 nodes): `PsicologiaFinanceiroController`
+- **Thin community `Community 60`** (1 nodes): `PsicologiaFinanceiroController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 67`** (2 nodes): `ConfigPsicologoMongoRepository`, `ConfigPsicologoRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
