@@ -672,6 +672,11 @@ rule: new tests only).
 | 13 — Monitoring | Emit the structured warn/error events in §11 on every fail-closed path (onboarding partial failure, acceptance/flag persist failure, terms text/version unavailable) | Red: tests asserting each failure path logs the agreed structured event → Green: logging | TBD | 0.5d |
 | — | Full battery: API build, API tests, web typecheck, web build | — | TBD | 0.5d |
 
+> Implementation note (2026-09-10): Phase 2 needed no production change — Phase 1's
+> `toEntity()` + `toPublicUser()` changes already surface both fields in the
+> `login`/`refresh` responses (the controllers pass `result.user` through
+> verbatim). Phase 2 landed as the contract regression tests only, no Red step.
+
 ---
 
 ## 9. Security Considerations
