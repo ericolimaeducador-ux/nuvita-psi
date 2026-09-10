@@ -16,6 +16,11 @@ export interface GateAvaliavel {
  * backend (AuthGatesGuard) só precisa saber que HÁ um gate pendente para
  * barrar toda rota não marcada com @GateExempt().
  *
+ * ⚠️ SINCRONIA MANUAL com `gateAtivo()` do web
+ * (apps/web/src/auth/GateChain.tsx): a CONDIÇÃO de cada gate e a ORDEM entre
+ * eles precisam bater nos dois. Não há teste automatizado que pegue os dois
+ * divergindo. Ao mexer num, mexer no outro.
+ *
  * Gates:
  * - troca de senha obrigatória: `deveTrocarSenha === true`, qualquer papel
  *   (feature-forced-password-change)

@@ -681,7 +681,7 @@ rule: new tests only).
 | 5 — Accept-terms endpoint | `POST /auth/aceitar-termos`: validates `versao` equals current, records `termosAceitos`, writes audit entry, returns updated user | Red: failing tests — wrong/absent `versao` → 400; correct version records `{versao,dataAceite}` and audits; idempotent for same version → Green: endpoint + service | TBD | 1d |
 | 6 — Forced-password-change endpoint | `POST /auth/trocar-senha-obrigatoria`: valid only while `deveTrocarSenha=true`, enforces password policy, updates hash, clears flag, audits, returns updated user | Red: failing tests — policy violation → 400; flag already false → 409; happy path updates hash + clears flag + audits → Green: endpoint + service | TBD | 1d |
 | 7 — Onboarding endpoint | `POST /super-admin/clinicas` under super-admin guard: generate temp password, call the onboarding facade, set `deveTrocarSenha=true` on the created admin, return clinic + admin + one-time password + 2FA key | Red: failing tests — non-super-admin → 403; duplicate CNPJ / e-mail → 409; happy path creates clinic + admin (flagged, 2FA provisioned) + `CLINIC_CREATED` audit; response carries the one-time secrets; partial failure leaves no orphan clinic → Green: endpoint + wiring | TBD | 1.5d |
-| 8 — Temp-password generator | Cryptographically random generator satisfying the password policy (optionally behind a Strategy seam) | Red: failing tests — output length/charset, satisfies the policy validator, non-deterministic → Green: generator | TBD | 0.5d |
+| 8 — Temp-password generator | **Absorbed into Phase 7** — `common/security/gerar-senha-temporaria.ts` (20 chars, `crypto.randomInt`, unambiguous alphanumeric, no symbols) landed with the onboarding endpoint since it needs it. Strategy seam judged unnecessary for one implementation. Spec covers length/charset/non-determinism. | — | — |
 | 9 — Web: gate chain | Ordered post-login gate chain at the router boundary (terms → password); each gate blocks all feature routes and direct URLs; chain re-runs after a gate clears | Red: failing interaction tests — `PSICOLOGO` with stale terms is sent to the terms screen; `deveTrocarSenha` user is sent to the change-password screen; both apply → terms first; direct navigation to a feature URL returns to the active gate; no gate → app renders → Green: gate-chain component + route wiring | TBD | 2d |
 | 10 — Web: accept-terms screen | Mandatory screen showing the current Terms text + version in full; explicit accept action (not pre-checked) calls the endpoint; on success updates local user and re-runs the chain | Red: failing tests — text + version shown; accept disabled until explicit action; success advances the chain → Green: screen | TBD | 1d |
 | 11 — Web: change-password screen | Mandatory screen; new-password field; calls the endpoint; policy errors surfaced; on success updates local user and re-runs the chain | Red: failing tests — policy error shown, no advance; success advances the chain → Green: screen | TBD | 1d |
@@ -693,6 +693,17 @@ rule: new tests only).
 > `toEntity()` + `toPublicUser()` changes already surface both fields in the
 > `login`/`refresh` responses (the controllers pass `result.user` through
 > verbatim). Phase 2 landed as the contract regression tests only, no Red step.
+>
+> Implementation note (2026-09-10): Phase 7 extended the shared `onboard()` facade
+> (a 3rd optional `options` param — `deveTrocarSenha` set atomically at
+> `users.create`, `atorUserId` for audit attribution) and added partial-failure
+> compensation (`clinicas.delete` when admin creation fails). The CLI
+> `bootstrap-admin` path is unchanged (passes no options; regression-tested).
+> `ClinicaRepository` gained `delete(id)` — compensation only. Phase 8 folded
+> into Phase 7. Phases 5–6 (`aceitar-termos` / `trocar-senha-obrigatoria`) put
+> `AuthGatesGuard` + `@GateExempt()` method-level on the 3 auth-controller
+> escape hatches (`logout`, `aceitar-termos`, `trocar-senha-obrigatoria`) — not
+> class-level, which would break the public `login`/`register`/`refresh`.
 
 ---
 
