@@ -200,3 +200,17 @@ meio de uma feature de produto.
 
 **Não bloqueante.** Avaliar como item próprio (qual runner, convenção de teste,
 cobertura mínima esperada) quando o volume de UI justificar.
+
+---
+
+## 10. `trocarSenhaObrigatoria` não revoga sessões de refresh já emitidas
+
+**Achado:** durante a Fase 6 de `feature/clinic-onboarding-and-auth-gates`
+(2026-09-10).
+
+`trocarSenhaObrigatoria` não revoga sessões de refresh já emitidas antes da
+troca — se alguém além do dono legítimo obteve a senha temporária e criou
+sessão antes da troca, essa sessão sobrevive à troca de senha. Risco baixo
+hoje (contas recém-criadas, sem histórico de uso), mas vira prioridade real
+conforme o volume de clínicas cresce. Considerar revogação de refresh tokens
+na troca forçada como parte de um hardening futuro.

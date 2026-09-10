@@ -19,6 +19,7 @@ import {
   REFRESH_TOKEN_TTL_SECONDS,
 } from '../auth.constants';
 import { AceitarTermosDto } from '../application/dto/aceitar-termos.dto';
+import { TrocarSenhaObrigatoriaDto } from '../application/dto/trocar-senha-obrigatoria.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { GateExempt } from './decorators/gate-exempt.decorator';
 import { AuthGatesGuard } from './guards/auth-gates.guard';
@@ -108,6 +109,26 @@ export class AuthController {
     @Req() request: Request,
   ) {
     return this.authService.aceitarTermos(user.sub, dto.versao, this.contextFromRequest(request));
+  }
+
+  // Isento do gate (@GateExempt): é o endpoint que resolve o gate de troca de
+  // senha obrigatória — sem a isenção, quem tem `deveTrocarSenha` nunca
+  // conseguiria trocá-la (deadlock). Ver §2.6/§9 do TDD.
+  @Post('trocar-senha-obrigatoria')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @UseGuards(JwtAuthGuard, AuthGatesGuard)
+  @GateExempt()
+  @AllowWithoutTenant()
+  async trocarSenhaObrigatoria(
+    @Body() dto: TrocarSenhaObrigatoriaDto,
+    @CurrentUser() user: AuthTokenPayload,
+    @Req() request: Request,
+  ) {
+    return this.authService.trocarSenhaObrigatoria(
+      user.sub,
+      dto.novaSenha,
+      this.contextFromRequest(request),
+    );
   }
 
   private setRefreshCookie(response: Response, tokens: AuthTokens): void {

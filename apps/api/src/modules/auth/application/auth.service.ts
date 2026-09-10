@@ -241,6 +241,43 @@ export class AuthService {
     return { user: toPublicUser(updated) };
   }
 
+  /**
+   * Conclui a troca de senha obrigatória do primeiro login
+   * (feature-forced-password-change). Válido só enquanto `deveTrocarSenha` é
+   * true; não é um "trocar minha senha" genérico (esse não passa por aqui e
+   * exigiria a senha atual). Endpoint isento do gate (@GateExempt).
+   */
+  async trocarSenhaObrigatoria(
+    userId: string,
+    novaSenha: string,
+    context: RequestContext,
+  ): Promise<{ user: PublicUser }> {
+    const user = await this.users.findById(userId);
+    if (!user || !user.ativo) {
+      throw new UnauthorizedException('Usuario inativo ou inexistente.');
+    }
+
+    if (!user.deveTrocarSenha) {
+      throw new ConflictException('Nao ha troca de senha obrigatoria pendente para esta conta.');
+    }
+
+    const passwordHash = await bcrypt.hash(novaSenha, this.configService.getConfig().bcryptRounds);
+    const updated = await this.users.update(userId, { passwordHash, deveTrocarSenha: false });
+    if (!updated) {
+      throw new UnauthorizedException('Usuario inativo ou inexistente.');
+    }
+
+    await this.auditLogs.create({
+      event: AuditEvent.FORCED_PASSWORD_CHANGED,
+      userId: updated.id,
+      email: updated.email,
+      ip: context.ip,
+      userAgent: context.userAgent,
+    });
+
+    return { user: toPublicUser(updated) };
+  }
+
   async validateAccessPayload(payload: AuthTokenPayload): Promise<AuthenticatedUser> {
     if (payload.typ !== 'access' || (await this.tokenRevocation.isRevoked(payload.jti))) {
       throw new UnauthorizedException('Token invalido.');

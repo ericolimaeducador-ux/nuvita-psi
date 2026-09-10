@@ -22,6 +22,7 @@ export interface UpdateUserInput {
   registroProfissional?: string;
   modulosConcedidos?: Modulo[];
   modulosRevogados?: Modulo[];
+  deveTrocarSenha?: boolean;
   termosAceitos?: TermosAceitos | null;
 }
 
