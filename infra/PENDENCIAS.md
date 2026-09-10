@@ -175,3 +175,28 @@ regressão da branch de auth.
 prefixar `_` se for mantido de propósito). Registrado aqui porque a branch de
 auth achou mas não é dona do arquivo — disciplina de não tocar código de outro
 escopo sem pedido.
+
+---
+
+## 9. `apps/web` não tem runner de teste
+
+**Achado:** durante a Fase 4 de `feature/clinic-onboarding-and-auth-gates`
+(2026-09-10).
+
+O `apps/web` não tem Vitest, Jest, `@testing-library` nem equivalente — os
+scripts são só `dev`, `build`, `preview`, `typecheck`, `lint` (`lint` é alias
+de `tsc --noEmit`). Nenhum `.spec`/`.test` em todo o `apps/web`.
+
+Nas Fases 4 e 9–12 desta feature (frontend) o ciclo Red/Green foi feito **a
+nível de build**: Red = `typecheck`/`build` falha por import/componente
+ausente; Green = `typecheck` + `build` passam. Lógica pura testável (predicado
+de gate, versão do termo) fica coberta pelos testes Jest do
+backend/`packages/shared`, não duplicada no front.
+
+**Mesmo padrão de decisão já usado 2x** na feature `feature-ai-usage-audit-trail`:
+"sem teste de controller" (Fase 8) e "sem `mongodb-memory-server`" (item 5
+acima) — não introduzir a primeira peça de infra de teste do repositório no
+meio de uma feature de produto.
+
+**Não bloqueante.** Avaliar como item próprio (qual runner, convenção de teste,
+cobertura mínima esperada) quando o volume de UI justificar.

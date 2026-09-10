@@ -5,10 +5,15 @@
   "description": "Frontend web do Nuvita Psi (painel para clinicas de psicologia)",
   "type": "module",
   "scripts": {
+    "copy:legal": "node scripts/copy-legal.mjs",
+    "predev": "npm run copy:legal",
     "dev": "vite",
+    "prebuild": "npm run copy:legal",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "pretypecheck": "npm run copy:legal",
     "typecheck": "tsc --noEmit",
+    "prelint": "npm run copy:legal",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

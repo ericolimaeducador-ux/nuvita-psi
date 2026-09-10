@@ -312,9 +312,9 @@ All three features add fields to the **same existing `users` collection**
 | Temporary-password policy | build-time constant (not env) | Length + character set for generated onboarding passwords | Must satisfy the existing password policy (min length 10); recommended ≥ 16 random characters |
 
 No new secret. No new environment variable. The Terms **text** shown on the
-accept screen is sourced from `docs/legal/termos-de-uso.md` (bundled into the
-web build); see §13 — the finalized legal text is an external dependency of
-the terms feature, not of this design.
+accept screen is sourced from `docs/legal/termos-de-uso.md` — the finalized,
+lawyer-reviewed v1.0 (2026-09-10), in the repo — bundled into the web build
+by a prebuild copy step (see Phase 4 in §8).
 
 ---
 
@@ -659,7 +659,7 @@ WhatsApp; the Terms of Use remain legally hollow with no acceptance record.
 | The backend gate guard has a bug that locks out a legitimate user (predicate wrong, `@GateExempt()` missing on a gate endpoint) | H | L | Predicate is one small pure function; `@GateExempt()` is explicit on exactly three handlers; explicit tests for "exempt handlers pass under an unmet gate, everything else 403" and "gate met → nothing rejected"; fix-forward per the rollback decision (a rolled-back API drops the guard entirely, never a lockout) |
 | Onboarding endpoint partially succeeds — clinic row created, admin creation fails — leaving an orphan clinic with no admin | M | L | The onboarding facade already checks CNPJ and admin e-mail uniqueness up front; creation order is clinic then admin; a failed admin creation must roll back or compensate the clinic — implementation must not leave an orphan (acceptance-tested) |
 | Terms text/version out of sync between the bundled web copy and what the endpoint validates | M | L | Single version constant is the source of truth for both the gate predicate and the accept endpoint; the text is bundled from `docs/legal/termos-de-uso.md` in the same build; a mismatch fails closed (user cannot accept a version the server doesn't recognize) |
-| Finalized legal Terms text not in the repo when the accept screen ships | M | M | External dependency, tracked in §13; the accept screen must not ship with placeholder legal text — the version constant + the real document land together |
+| The prebuild copy step silently no-ops when `docs/legal/termos-de-uso.md` is missing, shipping a broken accept screen | M | L | The prebuild script fails loudly (non-zero exit) if the source file is absent — no silent pass |
 | Super admin loses the one-time temporary password before relaying it | L | M | Documented: the recovery path is the existing super-admin reset-password action; a future "regenerate credentials" affordance is V2 |
 | A new gate added later in the wrong order position (e.g. password before terms) | L | L | Gate order defined in exactly one place with a comment stating the rule; adding a gate is a reviewed change to that one list |
 
@@ -902,13 +902,10 @@ needed.
   user creation) — reused by the Nova clínica dialog.
 - **Existing web auth context + `ProtectedRoute`** — the gate chain composes
   with these at the router boundary.
-- **`docs/legal/termos-de-uso.md` — finalized Terms text.** External, human
-  dependency. The file is **not yet in the repo** (only a draft
-  `termos-de-uso-nuvita-psi-RASCUNHO.md` exists). The design proceeds
-  referencing version `"1.0"` (effective 2026-09-10); the accept screen must
-  not ship until the finalized text is in the repo. The user will finalize it
-  with a lawyer before the terms feature reaches production — this is a
-  dependency of that feature's release, not of this design.
+- **`docs/legal/termos-de-uso.md` — finalized Terms text.** In the repo:
+  lawyer-reviewed v1.0, effective 2026-09-10, no open markers. Bundled into
+  the web build by the Phase 4 prebuild copy step. No longer a release
+  blocker.
 - **No new infrastructure**, no new secret, no new environment variable.
 
 ---
@@ -927,5 +924,5 @@ needed.
 
 ---
 
-*Stop point: this design doc is for review. No code is written until it is
-approved.*
+*Approved 2026-09-10. Implementation in progress on branch
+`feature/clinic-onboarding-and-auth-gates`, phase by phase (see §8).*
