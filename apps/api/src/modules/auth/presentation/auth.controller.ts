@@ -18,7 +18,10 @@ import {
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_TTL_SECONDS,
 } from '../auth.constants';
+import { AceitarTermosDto } from '../application/dto/aceitar-termos.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { GateExempt } from './decorators/gate-exempt.decorator';
+import { AuthGatesGuard } from './guards/auth-gates.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AllowWithoutTenant } from '../../../common/tenancy/tenant-required.guard';
 
@@ -74,7 +77,8 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AuthGatesGuard)
+  @GateExempt()
   async logout(
     @CurrentUser() user: AuthTokenPayload,
     @Req() request: Request,
@@ -88,6 +92,22 @@ export class AuthController {
 
     response.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/auth' });
     return { ok: true };
+  }
+
+  // Isento do gate (@GateExempt): é justamente o endpoint que resolve o gate
+  // de termos — sem a isenção, um PSICOLOGO com termos pendentes nunca
+  // conseguiria aceitá-los (deadlock). Ver §2.6/§9 do TDD.
+  @Post('aceitar-termos')
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
+  @UseGuards(JwtAuthGuard, AuthGatesGuard)
+  @GateExempt()
+  @AllowWithoutTenant()
+  async aceitarTermos(
+    @Body() dto: AceitarTermosDto,
+    @CurrentUser() user: AuthTokenPayload,
+    @Req() request: Request,
+  ) {
+    return this.authService.aceitarTermos(user.sub, dto.versao, this.contextFromRequest(request));
   }
 
   private setRefreshCookie(response: Response, tokens: AuthTokens): void {

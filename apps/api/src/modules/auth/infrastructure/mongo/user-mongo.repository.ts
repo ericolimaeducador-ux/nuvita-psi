@@ -69,6 +69,7 @@ export class UserMongoRepository implements UserRepository {
     if (input.registroProfissional !== undefined) set['registroProfissional'] = input.registroProfissional;
     if (input.modulosConcedidos !== undefined) set['modulosConcedidos'] = input.modulosConcedidos;
     if (input.modulosRevogados !== undefined) set['modulosRevogados'] = input.modulosRevogados;
+    if (input.termosAceitos !== undefined) set['termosAceitos'] = input.termosAceitos;
 
     const doc = await this.userModel
       .findByIdAndUpdate(id, { $set: set }, { new: true })
