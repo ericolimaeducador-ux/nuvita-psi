@@ -48,6 +48,10 @@ export const authApi = {
     api
       .post<GateResolvidoResponse>('/auth/aceitar-termos', { versao })
       .then((r) => r.data),
+  trocarSenhaObrigatoria: (novaSenha: string) =>
+    api
+      .post<GateResolvidoResponse>('/auth/trocar-senha-obrigatoria', { novaSenha })
+      .then((r) => r.data),
 };
 
 // ---------- Clínicas ----------
