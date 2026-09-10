@@ -1,6 +1,7 @@
 import { api } from './client';
 import type {
   Agendamento,
+  AuthUser,
   DecisaoUsoIA,
   Documento,
   Lancamento,
@@ -32,12 +33,21 @@ import type {
 } from '@/types';
 
 // ---------- Auth ----------
+/** Resposta dos endpoints que resolvem um gate pós-login: devolvem o user atualizado. */
+export interface GateResolvidoResponse {
+  user: AuthUser;
+}
+
 export const authApi = {
   login: (email: string, password: string, totpCode?: string) =>
     api
       .post<LoginResponse>('/auth/login', { email, password, totpCode })
       .then((r) => r.data),
   logout: () => api.post('/auth/logout').then((r) => r.data),
+  aceitarTermos: (versao: string) =>
+    api
+      .post<GateResolvidoResponse>('/auth/aceitar-termos', { versao })
+      .then((r) => r.data),
 };
 
 // ---------- Clínicas ----------
