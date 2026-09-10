@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -15,6 +16,7 @@ import {
   exigeTwoFactor,
   Papel,
 } from '../../../../../../packages/shared/src/auth';
+import { TERMOS_DE_USO_VERSAO_ATUAL } from '../../../../../../packages/shared/src/termos';
 import {
   ACCESS_TOKEN_TTL,
   AUDIT_LOG_REPOSITORY,
@@ -193,6 +195,50 @@ export class AuthService {
       ip: context.ip,
       userAgent: context.userAgent,
     });
+  }
+
+  /**
+   * Registra o aceite dos Termos de Uso do PSICOLOGO (feature-terms-of-service-acceptance).
+   * Endpoint isento do gate (@GateExempt), senão o usuário travaria: não pode
+   * aceitar porque aceitar está bloqueado pelo próprio gate de termos.
+   *
+   * Idempotente para a mesma versão: reenviar não regrava nem re-audita.
+   */
+  async aceitarTermos(
+    userId: string,
+    versao: string,
+    context: RequestContext,
+  ): Promise<{ user: PublicUser }> {
+    if (versao !== TERMOS_DE_USO_VERSAO_ATUAL) {
+      throw new BadRequestException('Versao dos Termos de Uso invalida ou desatualizada.');
+    }
+
+    const user = await this.users.findById(userId);
+    if (!user || !user.ativo) {
+      throw new UnauthorizedException('Usuario inativo ou inexistente.');
+    }
+
+    if (user.termosAceitos?.versao === versao) {
+      return { user: toPublicUser(user) };
+    }
+
+    const updated = await this.users.update(userId, {
+      termosAceitos: { versao, dataAceite: new Date() },
+    });
+    if (!updated) {
+      throw new UnauthorizedException('Usuario inativo ou inexistente.');
+    }
+
+    await this.auditLogs.create({
+      event: AuditEvent.TERMS_ACCEPTED,
+      userId: updated.id,
+      email: updated.email,
+      ip: context.ip,
+      userAgent: context.userAgent,
+      metadata: { versao },
+    });
+
+    return { user: toPublicUser(updated) };
   }
 
   async validateAccessPayload(payload: AuthTokenPayload): Promise<AuthenticatedUser> {

@@ -1,6 +1,9 @@
+import { BadRequestException } from '@nestjs/common';
 import { Papel } from '../../../../../../packages/shared/src/auth';
+import { TERMOS_DE_USO_VERSAO_ATUAL } from '../../../../../../packages/shared/src/termos';
 import { AuditLogRepository } from './ports/audit-log.repository';
 import { UserRepository } from './ports/user.repository';
+import { AuditEvent } from '../domain/audit-event.enum';
 import { User } from '../domain/user.entity';
 import { AuthService } from './auth.service';
 
@@ -31,6 +34,9 @@ function makeService(user: User) {
   const users = {
     findByEmailWithSecrets: jest.fn().mockResolvedValue(user),
     findById: jest.fn().mockResolvedValue(user),
+    update: jest.fn().mockImplementation((_id: string, patch: Partial<User>) =>
+      Promise.resolve({ ...user, ...patch }),
+    ),
   } as unknown as UserRepository;
 
   const auditLogs = { create: jest.fn().mockResolvedValue(undefined) } as unknown as AuditLogRepository;
@@ -74,7 +80,7 @@ function makeService(user: User) {
     tokenRevocation as never,
   );
 
-  return { service };
+  return { service, users, auditLogs };
 }
 
 const context = { ip: '127.0.0.1', userAgent: 'jest' };
@@ -156,5 +162,58 @@ describe('AuthService.validateAccessPayload — enriquece request.user (Fase 2b)
 
     expect(result.deveTrocarSenha).toBe(false);
     expect(result.termosAceitos).toBeNull();
+  });
+});
+
+describe('AuthService.aceitarTermos (Fase 5)', () => {
+  const context = { ip: '127.0.0.1', userAgent: 'jest' };
+
+  it('rejeita versão diferente da vigente com 400', async () => {
+    const { service } = makeService(makeUser({ papel: Papel.PSICOLOGO }));
+
+    await expect(service.aceitarTermos('u1', '0.9', context)).rejects.toThrow(BadRequestException);
+  });
+
+  it('registra termosAceitos { versao, dataAceite } e escreve TERMS_ACCEPTED', async () => {
+    const user = makeUser({ papel: Papel.PSICOLOGO, termosAceitos: null });
+    const { service, users, auditLogs } = makeService(user);
+
+    const res = await service.aceitarTermos('u1', TERMOS_DE_USO_VERSAO_ATUAL, context);
+
+    expect(users.update).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({
+        termosAceitos: expect.objectContaining({ versao: TERMOS_DE_USO_VERSAO_ATUAL, dataAceite: expect.any(Date) }),
+      }),
+    );
+    expect(auditLogs.create).toHaveBeenCalledWith(
+      expect.objectContaining({ event: AuditEvent.TERMS_ACCEPTED, metadata: { versao: TERMOS_DE_USO_VERSAO_ATUAL } }),
+    );
+    expect(res.user.termosAceitos?.versao).toBe(TERMOS_DE_USO_VERSAO_ATUAL);
+  });
+
+  it('é idempotente: aceitar de novo a mesma versão não regrava nem re-audita', async () => {
+    const user = makeUser({
+      papel: Papel.PSICOLOGO,
+      termosAceitos: { versao: TERMOS_DE_USO_VERSAO_ATUAL, dataAceite: new Date('2026-09-10') },
+    });
+    const { service, users, auditLogs } = makeService(user);
+
+    const res = await service.aceitarTermos('u1', TERMOS_DE_USO_VERSAO_ATUAL, context);
+
+    expect(users.update).not.toHaveBeenCalled();
+    expect(auditLogs.create).not.toHaveBeenCalled();
+    expect(res.user.termosAceitos?.versao).toBe(TERMOS_DE_USO_VERSAO_ATUAL);
+  });
+
+  it('não vaza passwordHash/twoFactorSecret na resposta', async () => {
+    const user = makeUser({ papel: Papel.PSICOLOGO, twoFactorSecret: 'BASE32', termosAceitos: null });
+    const { service } = makeService(user);
+
+    const res = await service.aceitarTermos('u1', TERMOS_DE_USO_VERSAO_ATUAL, context);
+    const asRecord = res.user as unknown as Record<string, unknown>;
+
+    expect(asRecord.passwordHash).toBeUndefined();
+    expect(asRecord.twoFactorSecret).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 import { Modulo, Papel } from '../../../../../../../packages/shared/src/auth';
-import { User } from '../../domain/user.entity';
+import { TermosAceitos, User } from '../../domain/user.entity';
 
 export interface CreateUserInput {
   nome: string;
@@ -22,6 +22,7 @@ export interface UpdateUserInput {
   registroProfissional?: string;
   modulosConcedidos?: Modulo[];
   modulosRevogados?: Modulo[];
+  termosAceitos?: TermosAceitos | null;
 }
 
 export interface UserFilters {
