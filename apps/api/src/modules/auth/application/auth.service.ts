@@ -23,6 +23,7 @@ import {
   USER_REPOSITORY,
 } from '../auth.constants';
 import { AuditEvent } from '../domain/audit-event.enum';
+import { AuthenticatedUser } from '../domain/authenticated-user';
 import { PublicUser, toPublicUser, User } from '../domain/user.entity';
 import { LoginRateLimiterService } from '../infrastructure/redis/login-rate-limiter.service';
 import { TokenRevocationService } from '../infrastructure/redis/token-revocation.service';
@@ -194,7 +195,7 @@ export class AuthService {
     });
   }
 
-  async validateAccessPayload(payload: AuthTokenPayload): Promise<AuthTokenPayload> {
+  async validateAccessPayload(payload: AuthTokenPayload): Promise<AuthenticatedUser> {
     if (payload.typ !== 'access' || (await this.tokenRevocation.isRevoked(payload.jti))) {
       throw new UnauthorizedException('Token invalido.');
     }
@@ -204,7 +205,13 @@ export class AuthService {
       throw new UnauthorizedException('Usuario inativo ou inexistente.');
     }
 
-    return payload;
+    // Enriquece request.user com o estado de conta que o AuthGatesGuard avalia
+    // (mesmo findById acima — sem round-trip extra).
+    return {
+      ...payload,
+      deveTrocarSenha: user.deveTrocarSenha ?? false,
+      termosAceitos: user.termosAceitos ?? null,
+    };
   }
 
   private assertTwoFactorIfRequired(user: User, token?: string): void {

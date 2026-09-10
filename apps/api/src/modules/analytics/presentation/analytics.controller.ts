@@ -1,6 +1,7 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AuthTokenPayload } from '../../../../../../packages/shared/src/auth';
 import { CurrentUser } from '../../auth/presentation/decorators/current-user.decorator';
+import { AuthGatesGuard } from '../../auth/presentation/guards/auth-gates.guard';
 import { JwtAuthGuard } from '../../auth/presentation/guards/jwt-auth.guard';
 import { TenantRequiredGuard } from '../../../common/tenancy/tenant-required.guard';
 import { AnalyticsService } from '../application/analytics.service';
@@ -14,7 +15,7 @@ import {
 // da clínica (RolesGuard removido de propósito) enxerga os relatórios —
 // mesma decisão já aplicada em PERMISSOES_PADRAO_POR_PAPEL.
 @Controller('analytics')
-@UseGuards(JwtAuthGuard, TenantRequiredGuard)
+@UseGuards(JwtAuthGuard, AuthGatesGuard, TenantRequiredGuard)
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 

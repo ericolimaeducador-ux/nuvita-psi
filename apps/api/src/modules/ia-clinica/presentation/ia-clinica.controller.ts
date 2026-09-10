@@ -5,6 +5,7 @@ import { AuthTokenPayload, Papel } from '../../../../../../packages/shared/src/a
 import { extractRequestMeta } from '../../../common/http/client-ip';
 import { CurrentUser } from '../../auth/presentation/decorators/current-user.decorator';
 import { Roles } from '../../auth/presentation/decorators/roles.decorator';
+import { AuthGatesGuard } from '../../auth/presentation/guards/auth-gates.guard';
 import { JwtAuthGuard } from '../../auth/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/presentation/guards/roles.guard';
 import { TenantRequiredGuard } from '../../../common/tenancy/tenant-required.guard';
@@ -18,7 +19,7 @@ import { RegistrarDecisaoDto } from '../application/dto/registrar-decisao.dto';
 // o limite é uma trava de custo/abuso, não uma questão de segurança. O guard
 // de throttling é global (APP_GUARD); aqui fica só o @Throttle que aperta.
 @Controller('ia-clinica')
-@UseGuards(JwtAuthGuard, TenantRequiredGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, AuthGatesGuard, TenantRequiredGuard, RolesGuard)
 @Roles(Papel.PSICOLOGO)
 @Throttle({ default: { ttl: 60_000, limit: 10 } })
 export class IaClinicaController {

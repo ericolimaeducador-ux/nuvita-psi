@@ -156,3 +156,22 @@ Registry) e removeu o Cloud Build do desenho, então a SA
 
 **Não bloqueante.** Decidir: deletar a SA + o binding, ou manter caso um dia
 se volte pro `--source`/Cloud Build. Nada mais no projeto depende dela.
+
+---
+
+## 8. Import não usado em `agendamentos.service.ts` (lint quebra em `main`)
+
+**Achado:** durante a Fase 2b de `feature/clinic-onboarding-and-auth-gates`
+(2026-09-10), ao rodar `npm run lint` na branch.
+
+`apps/api/src/modules/agendamentos/application/agendamentos.service.ts:9`
+importa `TipoAgendamento` de `../domain/agendamento.entity` mas não usa —
+`@typescript-eslint/no-unused-vars` faz `npm run lint` (workspace `api`) sair
+com erro. Presente em `main` desde o commit `471d67c`
+(`wip(papel): remove Papel.MEDICO do backend/shared/telas principais`), não é
+regressão da branch de auth.
+
+**Trivial, não bloqueante.** Remover `TipoAgendamento` da linha de import (ou
+prefixar `_` se for mantido de propósito). Registrado aqui porque a branch de
+auth achou mas não é dona do arquivo — disciplina de não tocar código de outro
+escopo sem pedido.

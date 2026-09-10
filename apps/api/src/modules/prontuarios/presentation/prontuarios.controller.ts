@@ -14,6 +14,7 @@ import { extractRequestMeta } from '../../../common/http/client-ip';
 import { AuthTokenPayload, PAPEIS_PROFISSIONAIS } from '../../../../../../packages/shared/src/auth';
 import { CurrentUser } from '../../auth/presentation/decorators/current-user.decorator';
 import { Roles } from '../../auth/presentation/decorators/roles.decorator';
+import { AuthGatesGuard } from '../../auth/presentation/guards/auth-gates.guard';
 import { JwtAuthGuard } from '../../auth/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/presentation/guards/roles.guard';
 import { TenantRequiredGuard } from '../../../common/tenancy/tenant-required.guard';
@@ -25,7 +26,7 @@ import { UpdateProntuarioDto } from '../application/dto/update-prontuario.dto';
 import { ProntuarioRequestContext, ProntuariosService } from '../application/prontuarios.service';
 
 @Controller('prontuarios')
-@UseGuards(JwtAuthGuard, TenantRequiredGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, AuthGatesGuard, TenantRequiredGuard, RolesGuard)
 @Roles(...PAPEIS_PROFISSIONAIS)
 export class ProntuariosController {
   constructor(private readonly prontuariosService: ProntuariosService) {}
