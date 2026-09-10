@@ -60,4 +60,9 @@ export enum AuditEvent {
   // Trilha de auditoria de uso de IA clínica (feature-ai-usage-audit-trail).
   AI_SUGGESTION_GENERATED = 'AI_SUGGESTION_GENERATED',
   AI_SUGGESTION_DECISION_RECORDED = 'AI_SUGGESTION_DECISION_RECORDED',
+
+  // Cadeia de gates pós-login. Criação de clínica via painel reaproveita
+  // CLINIC_CREATED (acima).
+  TERMS_ACCEPTED = 'TERMS_ACCEPTED', // feature-terms-of-service-acceptance
+  FORCED_PASSWORD_CHANGED = 'FORCED_PASSWORD_CHANGED', // feature-forced-password-change
 }
