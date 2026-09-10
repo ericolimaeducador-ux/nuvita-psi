@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Papel } from '../../../../../../packages/shared/src/auth';
 import { TERMOS_DE_USO_VERSAO_ATUAL } from '../../../../../../packages/shared/src/termos';
 import { AuditLogRepository } from './ports/audit-log.repository';
@@ -211,6 +211,55 @@ describe('AuthService.aceitarTermos (Fase 5)', () => {
     const { service } = makeService(user);
 
     const res = await service.aceitarTermos('u1', TERMOS_DE_USO_VERSAO_ATUAL, context);
+    const asRecord = res.user as unknown as Record<string, unknown>;
+
+    expect(asRecord.passwordHash).toBeUndefined();
+    expect(asRecord.twoFactorSecret).toBeUndefined();
+  });
+});
+
+describe('AuthService.trocarSenhaObrigatoria (Fase 6)', () => {
+  const context = { ip: '127.0.0.1', userAgent: 'jest' };
+
+  it('rejeita com 409 quando deveTrocarSenha já é false', async () => {
+    const { service } = makeService(makeUser({ deveTrocarSenha: false }));
+
+    await expect(
+      service.trocarSenhaObrigatoria('u1', 'novaSenhaSegura123', context),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('atualiza o hash, zera deveTrocarSenha e escreve FORCED_PASSWORD_CHANGED', async () => {
+    const user = makeUser({ deveTrocarSenha: true });
+    const { service, users, auditLogs } = makeService(user);
+
+    const res = await service.trocarSenhaObrigatoria('u1', 'novaSenhaSegura123', context);
+
+    expect(users.update).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ passwordHash: expect.any(String), deveTrocarSenha: false }),
+    );
+    expect(auditLogs.create).toHaveBeenCalledWith(
+      expect.objectContaining({ event: AuditEvent.FORCED_PASSWORD_CHANGED }),
+    );
+    expect(res.user.deveTrocarSenha).toBe(false);
+  });
+
+  it('o passwordHash gravado não é a senha em claro', async () => {
+    const user = makeUser({ deveTrocarSenha: true });
+    const { service, users } = makeService(user);
+
+    await service.trocarSenhaObrigatoria('u1', 'novaSenhaSegura123', context);
+
+    const patch = (users.update as jest.Mock).mock.calls[0][1];
+    expect(patch.passwordHash).not.toBe('novaSenhaSegura123');
+  });
+
+  it('não vaza passwordHash/twoFactorSecret na resposta', async () => {
+    const user = makeUser({ deveTrocarSenha: true, twoFactorSecret: 'BASE32' });
+    const { service } = makeService(user);
+
+    const res = await service.trocarSenhaObrigatoria('u1', 'novaSenhaSegura123', context);
     const asRecord = res.user as unknown as Record<string, unknown>;
 
     expect(asRecord.passwordHash).toBeUndefined();

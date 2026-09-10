@@ -1,25 +1,25 @@
 # Graph Report - .  (2026-09-10)
 
 ## Corpus Check
-- 372 files · ~137.248 words
+- 374 files · ~138.244 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1758 nodes · 2952 edges · 239 communities detected
+- 1765 nodes · 2959 edges · 241 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 865 · imports: 719 · method: 519 · imports_from: 449 · calls: 359 · implements: 33 · inherits: 8
+- Edge kinds: contains: 868 · imports: 719 · method: 521 · imports_from: 450 · calls: 360 · implements: 33 · inherits: 8
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 372 · Candidates: 414
-- Excluded: 101 untracked · 58023 ignored · 12 sensitive · 0 missing committed
+- Included files: 374 · Candidates: 416
+- Excluded: 101 untracked · 58044 ignored · 12 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `d8d1afa`
+- Built from Git commit: `b0783ee`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `PacienteMongoRepository` - 26 edges
@@ -143,16 +143,16 @@ Cohesion: 0.15
 Nodes (1): AnalyticsService
 
 ### Community 26 - "Community 26"
+Cohesion: 0.23
+Nodes (1): AuthService
+
+### Community 27 - "Community 27"
 Cohesion: 0.15
 Nodes (10): AssinaturaMongo, Cid10Document, Cid10Mongo, Cid10Schema, ProntuarioAddendumDocument, ProntuarioAddendumMongo, ProntuarioAddendumSchema, ProntuarioDocument (+2 more)
 
-### Community 27 - "Community 27"
+### Community 28 - "Community 28"
 Cohesion: 0.24
 Nodes (2): UserMongoRepository, UserRepository
-
-### Community 28 - "Community 28"
-Cohesion: 0.26
-Nodes (1): AuthService
 
 ### Community 29 - "Community 29"
 Cohesion: 0.30
@@ -231,20 +231,20 @@ Cohesion: 0.27
 Nodes (2): LancamentoMongoRepository, LancamentoRepository
 
 ### Community 48 - "Community 48"
+Cohesion: 0.38
+Nodes (1): AuthController
+
+### Community 49 - "Community 49"
 Cohesion: 0.36
 Nodes (1): TelemedicinaController
 
-### Community 49 - "Community 49"
+### Community 50 - "Community 50"
 Cohesion: 0.33
 Nodes (2): DocumentStorage, S3DocumentStorageService
 
-### Community 50 - "Community 50"
+### Community 51 - "Community 51"
 Cohesion: 0.44
 Nodes (1): NotificacoesService
-
-### Community 51 - "Community 51"
-Cohesion: 0.42
-Nodes (1): AuthController
 
 ### Community 52 - "Community 52"
 Cohesion: 0.39
@@ -684,318 +684,326 @@ Nodes (2): CreateSinalInput, SinalSalaRepository
 
 ### Community 161 - "Community 161"
 Cohesion: 0.67
-Nodes (2): CID10_REPOSITORY, PRONTUARIO_REPOSITORY
+Nodes (1): base
 
 ### Community 162 - "Community 162"
 Cohesion: 0.67
-Nodes (1): dryRun
+Nodes (2): CID10_REPOSITORY, PRONTUARIO_REPOSITORY
 
 ### Community 163 - "Community 163"
 Cohesion: 0.67
-Nodes (1): totpCode
+Nodes (1): dryRun
 
 ### Community 164 - "Community 164"
-Cohesion: 1.00
-Nodes (1): AGENDAMENTO_REPOSITORY
+Cohesion: 0.67
+Nodes (1): totpCode
 
 ### Community 165 - "Community 165"
 Cohesion: 1.00
-Nodes (1): AgendamentosModule
+Nodes (1): AGENDAMENTO_REPOSITORY
 
 ### Community 166 - "Community 166"
 Cohesion: 1.00
-Nodes (1): AnalyticsModule
+Nodes (1): AgendamentosModule
 
 ### Community 167 - "Community 167"
 Cohesion: 1.00
-Nodes (1): CLINICA_REPOSITORY
+Nodes (1): AnalyticsModule
 
 ### Community 168 - "Community 168"
 Cohesion: 1.00
-Nodes (1): ClinicasModule
+Nodes (1): CLINICA_REPOSITORY
 
-### Community 171 - "Community 171"
+### Community 169 - "Community 169"
 Cohesion: 1.00
-Nodes (1): DOCUMENTO_REPOSITORY
+Nodes (1): ClinicasModule
 
 ### Community 172 - "Community 172"
 Cohesion: 1.00
-Nodes (1): DocumentosModule
+Nodes (1): DOCUMENTO_REPOSITORY
 
-### Community 174 - "Community 174"
+### Community 173 - "Community 173"
 Cohesion: 1.00
-Nodes (1): AuditEvent
+Nodes (1): DocumentosModule
 
 ### Community 175 - "Community 175"
 Cohesion: 1.00
-Nodes (1): DecisaoUsoIa
+Nodes (1): AuditEvent
 
 ### Community 176 - "Community 176"
 Cohesion: 1.00
-Nodes (1): ObservacaoPaciente
+Nodes (1): DecisaoUsoIa
 
 ### Community 177 - "Community 177"
 Cohesion: 1.00
-Nodes (1): RegistroUsoIa
+Nodes (1): ObservacaoPaciente
 
 ### Community 178 - "Community 178"
 Cohesion: 1.00
-Nodes (1): TestePsicologico
+Nodes (1): RegistroUsoIa
 
 ### Community 179 - "Community 179"
 Cohesion: 1.00
-Nodes (1): CancelAgendamentoDto
+Nodes (1): TestePsicologico
 
 ### Community 180 - "Community 180"
 Cohesion: 1.00
-Nodes (1): Cid10QueryDto
+Nodes (1): AceitarTermosDto
 
 ### Community 181 - "Community 181"
 Cohesion: 1.00
-Nodes (1): CobrarCicloDto
+Nodes (1): CancelAgendamentoDto
 
 ### Community 182 - "Community 182"
 Cohesion: 1.00
-Nodes (1): ConsentimentoLGpdDto
+Nodes (1): Cid10QueryDto
 
 ### Community 183 - "Community 183"
 Cohesion: 1.00
-Nodes (1): ConvenioDto
+Nodes (1): CobrarCicloDto
 
 ### Community 184 - "Community 184"
 Cohesion: 1.00
-Nodes (1): CreateAddendumDto
+Nodes (1): ConsentimentoLGpdDto
 
 ### Community 185 - "Community 185"
 Cohesion: 1.00
-Nodes (1): CreateAgendamentoDto
+Nodes (1): ConvenioDto
 
 ### Community 186 - "Community 186"
 Cohesion: 1.00
-Nodes (1): CreateBloqueioDto
+Nodes (1): CreateAddendumDto
 
 ### Community 187 - "Community 187"
 Cohesion: 1.00
-Nodes (1): CreateLancamentoDto
+Nodes (1): CreateAgendamentoDto
 
 ### Community 188 - "Community 188"
 Cohesion: 1.00
-Nodes (1): CreateNotificacaoDto
+Nodes (1): CreateBloqueioDto
 
 ### Community 189 - "Community 189"
 Cohesion: 1.00
-Nodes (1): CreateObservacaoPacienteDto
+Nodes (1): CreateLancamentoDto
 
 ### Community 190 - "Community 190"
 Cohesion: 1.00
-Nodes (1): CreatePacienteDto
+Nodes (1): CreateNotificacaoDto
 
 ### Community 191 - "Community 191"
 Cohesion: 1.00
-Nodes (1): CreateSalaDto
+Nodes (1): CreateObservacaoPacienteDto
 
 ### Community 192 - "Community 192"
 Cohesion: 1.00
-Nodes (1): CreateTestePsicologicoDto
+Nodes (1): CreatePacienteDto
 
 ### Community 193 - "Community 193"
 Cohesion: 1.00
-Nodes (1): CreateUploadUrlDto
+Nodes (1): CreateSalaDto
 
 ### Community 194 - "Community 194"
 Cohesion: 1.00
-Nodes (1): DashboardNotificacoesQueryDto
+Nodes (1): CreateTestePsicologicoDto
 
 ### Community 195 - "Community 195"
 Cohesion: 1.00
-Nodes (1): EnderecoDto
+Nodes (1): CreateUploadUrlDto
 
 ### Community 196 - "Community 196"
 Cohesion: 1.00
-Nodes (1): EnviarSinalDto
+Nodes (1): DashboardNotificacoesQueryDto
 
 ### Community 197 - "Community 197"
 Cohesion: 1.00
-Nodes (1): FinancialDashboardQueryDto
+Nodes (1): EnderecoDto
 
 ### Community 198 - "Community 198"
 Cohesion: 1.00
-Nodes (1): GerarPrescricaoDto
+Nodes (1): EnviarSinalDto
 
 ### Community 199 - "Community 199"
 Cohesion: 1.00
-Nodes (1): ListAgendamentosQueryDto
+Nodes (1): FinancialDashboardQueryDto
 
 ### Community 200 - "Community 200"
 Cohesion: 1.00
-Nodes (1): ListBloqueiosQueryDto
+Nodes (1): GerarPrescricaoDto
 
 ### Community 201 - "Community 201"
 Cohesion: 1.00
-Nodes (1): ListDocumentosQueryDto
+Nodes (1): ListAgendamentosQueryDto
 
 ### Community 202 - "Community 202"
 Cohesion: 1.00
-Nodes (1): ListLancamentosQueryDto
+Nodes (1): ListBloqueiosQueryDto
 
 ### Community 203 - "Community 203"
 Cohesion: 1.00
-Nodes (1): ListPacientesQueryDto
+Nodes (1): ListDocumentosQueryDto
 
 ### Community 204 - "Community 204"
 Cohesion: 1.00
-Nodes (1): ListProntuariosQueryDto
+Nodes (1): ListLancamentosQueryDto
 
 ### Community 205 - "Community 205"
 Cohesion: 1.00
-Nodes (1): ListSalasQueryDto
+Nodes (1): ListPacientesQueryDto
 
 ### Community 206 - "Community 206"
 Cohesion: 1.00
-Nodes (1): LoginDto
+Nodes (1): ListProntuariosQueryDto
 
 ### Community 207 - "Community 207"
 Cohesion: 1.00
-Nodes (1): ReceiveLancamentoDto
+Nodes (1): ListSalasQueryDto
 
 ### Community 208 - "Community 208"
 Cohesion: 1.00
-Nodes (1): RegisterUserDto
+Nodes (1): LoginDto
 
 ### Community 209 - "Community 209"
 Cohesion: 1.00
-Nodes (1): RegistrarDecisaoDto
+Nodes (1): ReceiveLancamentoDto
 
 ### Community 210 - "Community 210"
 Cohesion: 1.00
-Nodes (1): SalvarConfigPsicologoDto
+Nodes (1): RegisterUserDto
 
 ### Community 211 - "Community 211"
 Cohesion: 1.00
-Nodes (1): SugerirAbordagemDto
+Nodes (1): RegistrarDecisaoDto
 
 ### Community 212 - "Community 212"
 Cohesion: 1.00
-Nodes (1): UpdateAgendamentoDto
+Nodes (1): SalvarConfigPsicologoDto
 
 ### Community 213 - "Community 213"
 Cohesion: 1.00
-Nodes (1): UpdateClinicaDto
+Nodes (1): SugerirAbordagemDto
 
 ### Community 214 - "Community 214"
 Cohesion: 1.00
-Nodes (1): UpdateObservacoesPacienteDto
+Nodes (1): UpdateAgendamentoDto
 
 ### Community 215 - "Community 215"
 Cohesion: 1.00
-Nodes (1): UpdateOptOutDto
+Nodes (1): UpdateClinicaDto
 
 ### Community 216 - "Community 216"
 Cohesion: 1.00
-Nodes (1): UpdatePacienteDto
+Nodes (1): UpdateObservacoesPacienteDto
 
 ### Community 217 - "Community 217"
 Cohesion: 1.00
-Nodes (1): UpdateProntuarioDto
+Nodes (1): UpdateOptOutDto
 
 ### Community 218 - "Community 218"
 Cohesion: 1.00
-Nodes (1): FinanceiroModule
+Nodes (1): UpdatePacienteDto
 
 ### Community 219 - "Community 219"
 Cohesion: 1.00
-Nodes (1): JwtAuthGuard
+Nodes (1): UpdateProntuarioDto
 
 ### Community 220 - "Community 220"
 Cohesion: 1.00
-Nodes (1): HealthModule
+Nodes (1): FinanceiroModule
+
+### Community 221 - "Community 221"
+Cohesion: 1.00
+Nodes (1): JwtAuthGuard
 
 ### Community 222 - "Community 222"
 Cohesion: 1.00
-Nodes (1): IaClinicaModule
-
-### Community 223 - "Community 223"
-Cohesion: 1.00
-Nodes (1): NotificacoesModule
+Nodes (1): HealthModule
 
 ### Community 224 - "Community 224"
 Cohesion: 1.00
-Nodes (1): ObservacoesPacienteModule
+Nodes (1): IaClinicaModule
 
 ### Community 225 - "Community 225"
 Cohesion: 1.00
-Nodes (1): PACIENTE_REPOSITORY
+Nodes (1): NotificacoesModule
 
 ### Community 226 - "Community 226"
 Cohesion: 1.00
-Nodes (1): PacientesModule
+Nodes (1): ObservacoesPacienteModule
 
 ### Community 227 - "Community 227"
 Cohesion: 1.00
-Nodes (1): ConfigPsicologoRepository
+Nodes (1): PACIENTE_REPOSITORY
 
 ### Community 228 - "Community 228"
 Cohesion: 1.00
-Nodes (1): DecisaoUsoIaRepository
+Nodes (1): PacientesModule
 
 ### Community 229 - "Community 229"
 Cohesion: 1.00
-Nodes (1): ObservacaoPacienteRepository
+Nodes (1): ConfigPsicologoRepository
 
 ### Community 230 - "Community 230"
 Cohesion: 1.00
-Nodes (1): RegistroUsoIaRepository
+Nodes (1): DecisaoUsoIaRepository
 
 ### Community 231 - "Community 231"
 Cohesion: 1.00
-Nodes (1): TestePsicologicoRepository
+Nodes (1): ObservacaoPacienteRepository
 
 ### Community 232 - "Community 232"
 Cohesion: 1.00
-Nodes (1): ProntuariosModule
+Nodes (1): RegistroUsoIaRepository
 
 ### Community 233 - "Community 233"
 Cohesion: 1.00
-Nodes (1): notificacaoQueueProvider
+Nodes (1): TestePsicologicoRepository
 
 ### Community 234 - "Community 234"
 Cohesion: 1.00
-Nodes (1): redisProvider
+Nodes (1): ProntuariosModule
+
+### Community 235 - "Community 235"
+Cohesion: 1.00
+Nodes (1): notificacaoQueueProvider
 
 ### Community 236 - "Community 236"
 Cohesion: 1.00
-Nodes (1): code
-
-### Community 237 - "Community 237"
-Cohesion: 1.00
-Nodes (1): SecurityModule
+Nodes (1): redisProvider
 
 ### Community 238 - "Community 238"
 Cohesion: 1.00
-Nodes (1): AppModule
+Nodes (1): code
 
 ### Community 239 - "Community 239"
 Cohesion: 1.00
-Nodes (1): SuperAdminModule
+Nodes (1): SecurityModule
 
 ### Community 240 - "Community 240"
 Cohesion: 1.00
-Nodes (1): TelemedicinaModule
+Nodes (1): AppModule
 
 ### Community 241 - "Community 241"
 Cohesion: 1.00
-Nodes (1): TestesPsicologicosModule
+Nodes (1): SuperAdminModule
 
 ### Community 242 - "Community 242"
 Cohesion: 1.00
+Nodes (1): TelemedicinaModule
+
+### Community 243 - "Community 243"
+Cohesion: 1.00
+Nodes (1): TestesPsicologicosModule
+
+### Community 244 - "Community 244"
+Cohesion: 1.00
 Nodes (1): apiProxy
 
-### Community 251 - "Community 251"
+### Community 253 - "Community 253"
 Cohesion: 1.00
 Nodes (1): ThrottlerGuard
 
 ## Knowledge Gaps
-- **481 isolated node(s):** `AppModule`, `BootstrapAdminOptions`, `BootstrapAdminModule`, `CID10_SCHEMA`, `Cid10Model` (+476 more)
+- **483 isolated node(s):** `AppModule`, `BootstrapAdminOptions`, `BootstrapAdminModule`, `CID10_SCHEMA`, `Cid10Model` (+478 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 14`** (1 nodes): `TelemedicinaService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -1011,9 +1019,9 @@ Nodes (1): ThrottlerGuard
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 25`** (1 nodes): `AnalyticsService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 27`** (2 nodes): `UserMongoRepository`, `UserRepository`
+- **Thin community `Community 26`** (1 nodes): `AuthService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 28`** (1 nodes): `AuthService`
+- **Thin community `Community 28`** (2 nodes): `UserMongoRepository`, `UserRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 29`** (1 nodes): `IaClinicaService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -1043,13 +1051,13 @@ Nodes (1): ThrottlerGuard
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 47`** (2 nodes): `LancamentoMongoRepository`, `LancamentoRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 48`** (1 nodes): `TelemedicinaController`
+- **Thin community `Community 48`** (1 nodes): `AuthController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 49`** (2 nodes): `DocumentStorage`, `S3DocumentStorageService`
+- **Thin community `Community 49`** (1 nodes): `TelemedicinaController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 50`** (1 nodes): `NotificacoesService`
+- **Thin community `Community 50`** (2 nodes): `DocumentStorage`, `S3DocumentStorageService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 51`** (1 nodes): `AuthController`
+- **Thin community `Community 51`** (1 nodes): `NotificacoesService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 52`** (1 nodes): `FinanceiroController`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -1165,161 +1173,165 @@ Nodes (1): ThrottlerGuard
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 160`** (2 nodes): `CreateSinalInput`, `SinalSalaRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 161`** (2 nodes): `CID10_REPOSITORY`, `PRONTUARIO_REPOSITORY`
+- **Thin community `Community 161`** (1 nodes): `base`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 162`** (1 nodes): `dryRun`
+- **Thin community `Community 162`** (2 nodes): `CID10_REPOSITORY`, `PRONTUARIO_REPOSITORY`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 163`** (1 nodes): `totpCode`
+- **Thin community `Community 163`** (1 nodes): `dryRun`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 164`** (1 nodes): `AGENDAMENTO_REPOSITORY`
+- **Thin community `Community 164`** (1 nodes): `totpCode`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 165`** (1 nodes): `AgendamentosModule`
+- **Thin community `Community 165`** (1 nodes): `AGENDAMENTO_REPOSITORY`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 166`** (1 nodes): `AnalyticsModule`
+- **Thin community `Community 166`** (1 nodes): `AgendamentosModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 167`** (1 nodes): `CLINICA_REPOSITORY`
+- **Thin community `Community 167`** (1 nodes): `AnalyticsModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 168`** (1 nodes): `ClinicasModule`
+- **Thin community `Community 168`** (1 nodes): `CLINICA_REPOSITORY`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 171`** (1 nodes): `DOCUMENTO_REPOSITORY`
+- **Thin community `Community 169`** (1 nodes): `ClinicasModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 172`** (1 nodes): `DocumentosModule`
+- **Thin community `Community 172`** (1 nodes): `DOCUMENTO_REPOSITORY`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 174`** (1 nodes): `AuditEvent`
+- **Thin community `Community 173`** (1 nodes): `DocumentosModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 175`** (1 nodes): `DecisaoUsoIa`
+- **Thin community `Community 175`** (1 nodes): `AuditEvent`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 176`** (1 nodes): `ObservacaoPaciente`
+- **Thin community `Community 176`** (1 nodes): `DecisaoUsoIa`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 177`** (1 nodes): `RegistroUsoIa`
+- **Thin community `Community 177`** (1 nodes): `ObservacaoPaciente`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 178`** (1 nodes): `TestePsicologico`
+- **Thin community `Community 178`** (1 nodes): `RegistroUsoIa`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 179`** (1 nodes): `CancelAgendamentoDto`
+- **Thin community `Community 179`** (1 nodes): `TestePsicologico`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 180`** (1 nodes): `Cid10QueryDto`
+- **Thin community `Community 180`** (1 nodes): `AceitarTermosDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 181`** (1 nodes): `CobrarCicloDto`
+- **Thin community `Community 181`** (1 nodes): `CancelAgendamentoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 182`** (1 nodes): `ConsentimentoLGpdDto`
+- **Thin community `Community 182`** (1 nodes): `Cid10QueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 183`** (1 nodes): `ConvenioDto`
+- **Thin community `Community 183`** (1 nodes): `CobrarCicloDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 184`** (1 nodes): `CreateAddendumDto`
+- **Thin community `Community 184`** (1 nodes): `ConsentimentoLGpdDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 185`** (1 nodes): `CreateAgendamentoDto`
+- **Thin community `Community 185`** (1 nodes): `ConvenioDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 186`** (1 nodes): `CreateBloqueioDto`
+- **Thin community `Community 186`** (1 nodes): `CreateAddendumDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 187`** (1 nodes): `CreateLancamentoDto`
+- **Thin community `Community 187`** (1 nodes): `CreateAgendamentoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 188`** (1 nodes): `CreateNotificacaoDto`
+- **Thin community `Community 188`** (1 nodes): `CreateBloqueioDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 189`** (1 nodes): `CreateObservacaoPacienteDto`
+- **Thin community `Community 189`** (1 nodes): `CreateLancamentoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 190`** (1 nodes): `CreatePacienteDto`
+- **Thin community `Community 190`** (1 nodes): `CreateNotificacaoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 191`** (1 nodes): `CreateSalaDto`
+- **Thin community `Community 191`** (1 nodes): `CreateObservacaoPacienteDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 192`** (1 nodes): `CreateTestePsicologicoDto`
+- **Thin community `Community 192`** (1 nodes): `CreatePacienteDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 193`** (1 nodes): `CreateUploadUrlDto`
+- **Thin community `Community 193`** (1 nodes): `CreateSalaDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 194`** (1 nodes): `DashboardNotificacoesQueryDto`
+- **Thin community `Community 194`** (1 nodes): `CreateTestePsicologicoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 195`** (1 nodes): `EnderecoDto`
+- **Thin community `Community 195`** (1 nodes): `CreateUploadUrlDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 196`** (1 nodes): `EnviarSinalDto`
+- **Thin community `Community 196`** (1 nodes): `DashboardNotificacoesQueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 197`** (1 nodes): `FinancialDashboardQueryDto`
+- **Thin community `Community 197`** (1 nodes): `EnderecoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 198`** (1 nodes): `GerarPrescricaoDto`
+- **Thin community `Community 198`** (1 nodes): `EnviarSinalDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 199`** (1 nodes): `ListAgendamentosQueryDto`
+- **Thin community `Community 199`** (1 nodes): `FinancialDashboardQueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 200`** (1 nodes): `ListBloqueiosQueryDto`
+- **Thin community `Community 200`** (1 nodes): `GerarPrescricaoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 201`** (1 nodes): `ListDocumentosQueryDto`
+- **Thin community `Community 201`** (1 nodes): `ListAgendamentosQueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 202`** (1 nodes): `ListLancamentosQueryDto`
+- **Thin community `Community 202`** (1 nodes): `ListBloqueiosQueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 203`** (1 nodes): `ListPacientesQueryDto`
+- **Thin community `Community 203`** (1 nodes): `ListDocumentosQueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 204`** (1 nodes): `ListProntuariosQueryDto`
+- **Thin community `Community 204`** (1 nodes): `ListLancamentosQueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 205`** (1 nodes): `ListSalasQueryDto`
+- **Thin community `Community 205`** (1 nodes): `ListPacientesQueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 206`** (1 nodes): `LoginDto`
+- **Thin community `Community 206`** (1 nodes): `ListProntuariosQueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 207`** (1 nodes): `ReceiveLancamentoDto`
+- **Thin community `Community 207`** (1 nodes): `ListSalasQueryDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 208`** (1 nodes): `RegisterUserDto`
+- **Thin community `Community 208`** (1 nodes): `LoginDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 209`** (1 nodes): `RegistrarDecisaoDto`
+- **Thin community `Community 209`** (1 nodes): `ReceiveLancamentoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 210`** (1 nodes): `SalvarConfigPsicologoDto`
+- **Thin community `Community 210`** (1 nodes): `RegisterUserDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 211`** (1 nodes): `SugerirAbordagemDto`
+- **Thin community `Community 211`** (1 nodes): `RegistrarDecisaoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 212`** (1 nodes): `UpdateAgendamentoDto`
+- **Thin community `Community 212`** (1 nodes): `SalvarConfigPsicologoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 213`** (1 nodes): `UpdateClinicaDto`
+- **Thin community `Community 213`** (1 nodes): `SugerirAbordagemDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 214`** (1 nodes): `UpdateObservacoesPacienteDto`
+- **Thin community `Community 214`** (1 nodes): `UpdateAgendamentoDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 215`** (1 nodes): `UpdateOptOutDto`
+- **Thin community `Community 215`** (1 nodes): `UpdateClinicaDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 216`** (1 nodes): `UpdatePacienteDto`
+- **Thin community `Community 216`** (1 nodes): `UpdateObservacoesPacienteDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 217`** (1 nodes): `UpdateProntuarioDto`
+- **Thin community `Community 217`** (1 nodes): `UpdateOptOutDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 218`** (1 nodes): `FinanceiroModule`
+- **Thin community `Community 218`** (1 nodes): `UpdatePacienteDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 219`** (1 nodes): `JwtAuthGuard`
+- **Thin community `Community 219`** (1 nodes): `UpdateProntuarioDto`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 220`** (1 nodes): `HealthModule`
+- **Thin community `Community 220`** (1 nodes): `FinanceiroModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 222`** (1 nodes): `IaClinicaModule`
+- **Thin community `Community 221`** (1 nodes): `JwtAuthGuard`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 223`** (1 nodes): `NotificacoesModule`
+- **Thin community `Community 222`** (1 nodes): `HealthModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 224`** (1 nodes): `ObservacoesPacienteModule`
+- **Thin community `Community 224`** (1 nodes): `IaClinicaModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 225`** (1 nodes): `PACIENTE_REPOSITORY`
+- **Thin community `Community 225`** (1 nodes): `NotificacoesModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 226`** (1 nodes): `PacientesModule`
+- **Thin community `Community 226`** (1 nodes): `ObservacoesPacienteModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 227`** (1 nodes): `ConfigPsicologoRepository`
+- **Thin community `Community 227`** (1 nodes): `PACIENTE_REPOSITORY`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 228`** (1 nodes): `DecisaoUsoIaRepository`
+- **Thin community `Community 228`** (1 nodes): `PacientesModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 229`** (1 nodes): `ObservacaoPacienteRepository`
+- **Thin community `Community 229`** (1 nodes): `ConfigPsicologoRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 230`** (1 nodes): `RegistroUsoIaRepository`
+- **Thin community `Community 230`** (1 nodes): `DecisaoUsoIaRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 231`** (1 nodes): `TestePsicologicoRepository`
+- **Thin community `Community 231`** (1 nodes): `ObservacaoPacienteRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 232`** (1 nodes): `ProntuariosModule`
+- **Thin community `Community 232`** (1 nodes): `RegistroUsoIaRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 233`** (1 nodes): `notificacaoQueueProvider`
+- **Thin community `Community 233`** (1 nodes): `TestePsicologicoRepository`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 234`** (1 nodes): `redisProvider`
+- **Thin community `Community 234`** (1 nodes): `ProntuariosModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 236`** (1 nodes): `code`
+- **Thin community `Community 235`** (1 nodes): `notificacaoQueueProvider`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 237`** (1 nodes): `SecurityModule`
+- **Thin community `Community 236`** (1 nodes): `redisProvider`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 238`** (1 nodes): `AppModule`
+- **Thin community `Community 238`** (1 nodes): `code`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 239`** (1 nodes): `SuperAdminModule`
+- **Thin community `Community 239`** (1 nodes): `SecurityModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 240`** (1 nodes): `TelemedicinaModule`
+- **Thin community `Community 240`** (1 nodes): `AppModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 241`** (1 nodes): `TestesPsicologicosModule`
+- **Thin community `Community 241`** (1 nodes): `SuperAdminModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 242`** (1 nodes): `apiProxy`
+- **Thin community `Community 242`** (1 nodes): `TelemedicinaModule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 251`** (1 nodes): `ThrottlerGuard`
+- **Thin community `Community 243`** (1 nodes): `TestesPsicologicosModule`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 244`** (1 nodes): `apiProxy`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 253`** (1 nodes): `ThrottlerGuard`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
@@ -1330,7 +1342,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `PacientesService` connect `Community 20` to `Community 13`?**
   _High betweenness centrality (0.005) - this node is a cross-community bridge._
 - **What connects `AppModule`, `BootstrapAdminOptions`, `BootstrapAdminModule` to the rest of the system?**
-  _481 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _483 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.03643480879253237 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**

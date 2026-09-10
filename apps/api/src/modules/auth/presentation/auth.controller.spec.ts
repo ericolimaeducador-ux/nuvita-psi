@@ -46,6 +46,14 @@ describe('AuthController — endpoints isentos do gate (Fase 5)', () => {
     ).toBe(true);
   });
 
+  it('usuário com deveTrocarSenha CONSEGUE POST /auth/trocar-senha-obrigatoria', () => {
+    expect(
+      guard.canActivate(
+        ctxFor(AuthController.prototype.trocarSenhaObrigatoria, { ...base, deveTrocarSenha: true }),
+      ),
+    ).toBe(true);
+  });
+
   it('sanidade: um handler NÃO isento (login) barraria um usuário com gate — prova que o guard está de fato ativo', () => {
     // login não tem @GateExempt(); com um user gated no request seria barrado.
     // (na prática login não tem request.user, mas aqui isolamos o efeito do decorator)
