@@ -125,3 +125,36 @@ describe('AuthService — contrato do user na resposta (Fase 2)', () => {
     expect(asRecord.twoFactorSecret).toBeUndefined();
   });
 });
+
+describe('AuthService.validateAccessPayload — enriquece request.user (Fase 2b)', () => {
+  const accessPayload = {
+    typ: 'access' as const,
+    jti: 'access-jti',
+    sub: 'u1',
+    email: 'fulana@nuvita.test',
+    papel: Papel.PSICOLOGO,
+  };
+
+  it('anexa deveTrocarSenha e termosAceitos ao que retorna', async () => {
+    const termos = { versao: '1.0', dataAceite: new Date('2026-09-10T12:00:00.000Z') };
+    const user = makeUser({ papel: Papel.PSICOLOGO, deveTrocarSenha: true, termosAceitos: termos });
+    const { service } = makeService(user);
+
+    const result = await service.validateAccessPayload(accessPayload);
+
+    expect(result.deveTrocarSenha).toBe(true);
+    expect(result.termosAceitos).toEqual(termos);
+    expect(result.sub).toBe('u1');
+    expect(result.typ).toBe('access');
+  });
+
+  it('normaliza ausência para false / null', async () => {
+    const user = makeUser({ deveTrocarSenha: false, termosAceitos: null });
+    const { service } = makeService(user);
+
+    const result = await service.validateAccessPayload(accessPayload);
+
+    expect(result.deveTrocarSenha).toBe(false);
+    expect(result.termosAceitos).toBeNull();
+  });
+});

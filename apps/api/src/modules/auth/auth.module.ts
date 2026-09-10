@@ -14,6 +14,7 @@ import { LoginRateLimiterService } from './infrastructure/redis/login-rate-limit
 import { redisProvider } from './infrastructure/redis/redis.provider';
 import { TokenRevocationService } from './infrastructure/redis/token-revocation.service';
 import { AuthController } from './presentation/auth.controller';
+import { AuthGatesGuard } from './presentation/guards/auth-gates.guard';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { JwtStrategy } from './presentation/guards/jwt.strategy';
 import { RolesGuard } from './presentation/guards/roles.guard';
@@ -36,6 +37,7 @@ import { SuperAdminGuard } from './presentation/guards/super-admin.guard';
     TokenRevocationService,
     JwtStrategy,
     JwtAuthGuard,
+    AuthGatesGuard,
     RolesGuard,
     SuperAdminGuard,
     redisProvider,
@@ -44,7 +46,15 @@ import { SuperAdminGuard } from './presentation/guards/super-admin.guard';
   ],
   // REDIS_CLIENT é exportado para o HealthModule checar a MESMA conexão que a
   // autenticação usa (ver modules/health/redis.health.ts).
-  exports: [AuthService, JwtAuthGuard, RolesGuard, SuperAdminGuard, USER_REPOSITORY, REDIS_CLIENT],
+  exports: [
+    AuthService,
+    JwtAuthGuard,
+    AuthGatesGuard,
+    RolesGuard,
+    SuperAdminGuard,
+    USER_REPOSITORY,
+    REDIS_CLIENT,
+  ],
 })
 export class AuthModule implements OnApplicationShutdown {
   private readonly logger = new Logger(AuthModule.name);

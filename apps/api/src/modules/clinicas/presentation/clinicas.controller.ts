@@ -4,6 +4,7 @@ import { extractRequestMeta } from '../../../common/http/client-ip';
 import { AuthTokenPayload, Papel } from '../../../../../../packages/shared/src/auth';
 import { CurrentUser } from '../../auth/presentation/decorators/current-user.decorator';
 import { Roles } from '../../auth/presentation/decorators/roles.decorator';
+import { AuthGatesGuard } from '../../auth/presentation/guards/auth-gates.guard';
 import { JwtAuthGuard } from '../../auth/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/presentation/guards/roles.guard';
 import { TenantRequiredGuard } from '../../../common/tenancy/tenant-required.guard';
@@ -15,7 +16,7 @@ export class ClinicasController {
   constructor(private readonly clinicasService: ClinicasService) {}
 
   @Post(':clinicaId/usuarios')
-  @UseGuards(JwtAuthGuard, TenantRequiredGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, AuthGatesGuard, TenantRequiredGuard, RolesGuard)
   @Roles(Papel.ADMIN)
   createUsuario(
     @Param('clinicaId') clinicaId: string,

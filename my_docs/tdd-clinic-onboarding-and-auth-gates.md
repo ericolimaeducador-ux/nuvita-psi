@@ -243,22 +243,34 @@ Error responses:
   - **Frontend router / app-shell — UX layer.** No feature route and no
     direct URL can render app content while a gate is active; the user is
     shown the active gate's screen.
-  - **Backend — security layer.** The per-request access-token validation
-    already loads the full `User`. While any gate condition is unmet, every
-    authenticated request is rejected **except** an allow-list: the two gate
-    endpoints (`aceitar-termos`, `trocar-senha-obrigatoria`) and `logout`.
-    This is the actual boundary; the router redirect is its UX. No extra
-    round-trip — the user is already in memory at that point.
-  - Both layers evaluate the same predicates over the same fields; the
+  - **Backend — security layer.** Realized as (decided 2026-09-10, revised
+    from an earlier `passReqToCallback` sketch):
+    - The per-request access-token validation already loads the full `User`.
+      It is extended to **attach the gate fields** (`deveTrocarSenha`,
+      `termosAceitos`) to what it returns, so they ride on `request.user`
+      alongside the token payload. Still one DB load — the one already there.
+    - A dedicated `AuthGatesGuard` (a `CanActivate`) runs after the auth
+      guard on the authenticated controllers. It reads `request.user`,
+      evaluates the "any gate unmet" predicate, and — unless the handler
+      carries a `@GateExempt()` decorator (read via `Reflector`, same
+      pattern as the existing `@AllowWithoutTenant()`) — returns `403` when
+      a gate is unmet.
+    - `@GateExempt()` marks exactly the endpoints that must stay reachable
+      while a gate is active: `aceitar-termos`, `trocar-senha-obrigatoria`,
+      `logout`. Decorator, not a hard-coded path list — survives a route
+      rename.
+    - This is the actual boundary; the router redirect is its UX.
+  - Both layers evaluate the same predicate over the same fields; the
     backend is authoritative. Gate order (terms before password) is
     reflected in the frontend redirect; the backend layer only needs to know
-    "some gate is unmet" for the allow-list check.
+    "some gate is unmet".
 
-**Extension contract:** adding a gate = add a field to the user payload, add
-one predicate + screen to the chain in its correct order position, add the
-predicate to the backend "any gate unmet" check, add a dedicated endpoint
-that clears the condition (and add it to the backend allow-list), add an
-audit event. No route table changes.
+**Extension contract:** adding a gate = add a field to the user payload +
+`validateAccessPayload` enrichment, add one predicate + screen to the chain
+in its correct order position, add the predicate to the shared "any gate
+unmet" function the guard uses, add a dedicated endpoint that clears the
+condition (and mark it `@GateExempt()`), add an audit event. No route table
+changes.
 
 ### 2.7 Shared mechanism — `User` schema migration
 
@@ -584,11 +596,16 @@ WhatsApp; the Terms of Use remain legally hollow with no acceptance record.
   no-backfill migration and the safety invariant in §2.7.
 - Login and refresh responses expose both new fields (additive).
 - Ordered post-login gate chain, enforced in two layers: the web router
-  boundary (UX) and a backend check in the per-request access-token
-  validation (security). Terms gate (scope `PSICOLOGO`), then password gate.
-- Backend allow-list while any gate is unmet: only `aceitar-termos`,
-  `trocar-senha-obrigatoria` and `logout`; every other authenticated request
-  → `403`.
+  boundary (UX) and a dedicated `AuthGatesGuard` on the authenticated
+  controllers (security). Terms gate (scope `PSICOLOGO`), then password gate.
+- `@GateExempt()` decorator marks the endpoints reachable while a gate is
+  active: `aceitar-termos`, `trocar-senha-obrigatoria`, `logout`; every other
+  authenticated request under an unmet gate → `403`.
+- `validateAccessPayload` extended to attach `deveTrocarSenha` / `termosAceitos`
+  to `request.user` (no new DB load).
+- API-side current-Terms-version constant (shared with the web) — pulled
+  forward from Phase 4 because the guard predicate needs it; Phase 4 keeps the
+  Terms-text bundling.
 - Mandatory accept-Terms screen and mandatory change-password screen; only
   the active gate screen + logout reachable.
 - New endpoints to record terms acceptance and to complete the forced
@@ -615,9 +632,9 @@ WhatsApp; the Terms of Use remain legally hollow with no acceptance record.
   evaluated at login / refresh only).
 - Storing a history of past Terms acceptances per user (only the latest is
   kept on the `User` document; the audit log carries the trail).
-- Per-route backend gate decorators/config (the V1 backend enforcement is a
-  single central check in access-token validation with an endpoint
-  allow-list, not per-route annotations).
+- Per-route gate configuration beyond the single `@GateExempt()` opt-out
+  (V1 backend enforcement is one guard + one predicate + the exemption
+  decorator on three handlers).
 
 ### Future (V2+)
 
@@ -638,8 +655,8 @@ WhatsApp; the Terms of Use remain legally hollow with no acceptance record.
 |------|--------|-------------|------------|
 | The schema change or gate chain regresses login for existing users | H | L | Additive fields only, no backfill; gates only fire on `deveTrocarSenha = true` (set nowhere for existing accounts) or `PSICOLOGO` with a stale terms version (zero such accounts in production, verified); explicit regression tests that a pre-existing account with the fields absent logs straight into the app |
 | Temporary password exposed longer than intended (WhatsApp history, screenshot) | M | M | Server-generated (not reused across clients), high-entropy, returned once; forced-change gate blocks all app access until the owner sets a private password; `FORCED_PASSWORD_CHANGED` audit entry gives a timestamp of when the exposure window closed |
-| A holder of a valid access token calls the API directly while a gate is active | M | M | **Closed** — V1 includes the backend gate check (§2.6, §9): the per-request access-token validation rejects every authenticated request except the gate endpoints and logout while any gate condition is unmet. The frontend redirect is UX only |
-| The backend gate check has a bug that locks out a legitimate user (e.g. allow-list wrong, predicate wrong) | H | L | The allow-list and predicates are small and centralized in one place; explicit tests for "gate endpoints + logout reachable, everything else 403" and "no gate → nothing rejected"; fix-forward per the rollback decision (a rolled-back API drops the check entirely, never a lockout) |
+| A holder of a valid access token calls the API directly while a gate is active | M | M | **Closed** — V1 includes the `AuthGatesGuard` on the authenticated controllers (§2.6, §9): `403` on every authenticated request under an unmet gate except handlers marked `@GateExempt()`. The frontend redirect is UX only |
+| The backend gate guard has a bug that locks out a legitimate user (predicate wrong, `@GateExempt()` missing on a gate endpoint) | H | L | Predicate is one small pure function; `@GateExempt()` is explicit on exactly three handlers; explicit tests for "exempt handlers pass under an unmet gate, everything else 403" and "gate met → nothing rejected"; fix-forward per the rollback decision (a rolled-back API drops the guard entirely, never a lockout) |
 | Onboarding endpoint partially succeeds — clinic row created, admin creation fails — leaving an orphan clinic with no admin | M | L | The onboarding facade already checks CNPJ and admin e-mail uniqueness up front; creation order is clinic then admin; a failed admin creation must roll back or compensate the clinic — implementation must not leave an orphan (acceptance-tested) |
 | Terms text/version out of sync between the bundled web copy and what the endpoint validates | M | L | Single version constant is the source of truth for both the gate predicate and the accept endpoint; the text is bundled from `docs/legal/termos-de-uso.md` in the same build; a mismatch fails closed (user cannot accept a version the server doesn't recognize) |
 | Finalized legal Terms text not in the repo when the accept screen ships | M | M | External dependency, tracked in §13; the accept screen must not ship with placeholder legal text — the version constant + the real document land together |
@@ -658,9 +675,9 @@ rule: new tests only).
 |-------|------|-----------|-------|----------|
 | 1 — Schema | Add `deveTrocarSenha` and `termosAceitos` to the user schema + sanitized user projection + shared user type; additive, defaults, no backfill | Red: failing tests — new accounts default `deveTrocarSenha=false` / `termosAceitos` null; the sanitized projection now carries both fields; an existing-style document (fields absent) reads as false / not-accepted → Green: schema + projection | TBD | 0.5d |
 | 2 — Login/refresh contract | Login and refresh responses expose both fields | Red: failing tests — `/auth/login` and `/auth/refresh` response `user` includes `deveTrocarSenha` and `termosAceitos` → Green: wire through the existing projection | TBD | 0.25d |
-| 2b — Backend gate guard | In the per-request access-token validation, reject authenticated requests with `403` while any gate condition is unmet, except the allow-list (`aceitar-termos`, `trocar-senha-obrigatoria`, `logout`). Central check, one place. | Red: failing tests — `deveTrocarSenha=true` blocks a normal route and allows the allow-list; `PSICOLOGO` with stale/absent terms version blocked + allow-list allowed; no gate unmet → nothing blocked; refresh still works while gated → Green: the check + allow-list | TBD | 0.75d |
+| 2b — Backend gate guard | (a) API-side current-Terms-version constant in `packages/shared` (version + effective date), single source shared with the web — pulled forward from Phase 4 because the guard predicate needs it. (b) `validateAccessPayload` attaches `deveTrocarSenha` / `termosAceitos` to `request.user`. (c) shared "any gate unmet" predicate function. (d) `@GateExempt()` decorator + `AuthGatesGuard` (`CanActivate`) on the authenticated controllers, `403` when a gate is unmet and the handler is not exempt. | Red: failing tests — predicate: `deveTrocarSenha=true` unmet; `PSICOLOGO` with absent/stale terms version unmet; non-`PSICOLOGO` never unmet by terms; nothing set → met. Guard: unmet + non-exempt handler → 403; unmet + `@GateExempt()` handler → passes; met → passes; missing `request.user` → passes (guard is downstream of auth). `validateAccessPayload` return carries the two fields. → Green: constant + enrichment + predicate + decorator + guard | TBD | 1d |
 | 3 — Audit events | Add event types for terms acceptance and forced password change (reuse `CLINIC_CREATED`) | Red: tests asserting the new values are emitted by phases 5–7 → Green: enum additions | TBD | 0.25d |
-| 4 — Terms version constant | Current Terms version + effective date as a single build-time constant; wire the Terms text into the web build from `docs/legal/termos-de-uso.md` | Red: failing test — the gate predicate and the accept endpoint read the same version value → Green: constant + bundling | TBD | 0.5d |
+| 4 — Terms text bundling | Wire the Terms text into the web build from `docs/legal/termos-de-uso.md` (the version constant already exists from Phase 2b). Effective-date metadata alongside the constant if not already added. | Red: failing test — the web accept screen renders the current version's text and the version string matches the shared constant → Green: bundling | TBD | 0.5d |
 | 5 — Accept-terms endpoint | `POST /auth/aceitar-termos`: validates `versao` equals current, records `termosAceitos`, writes audit entry, returns updated user | Red: failing tests — wrong/absent `versao` → 400; correct version records `{versao,dataAceite}` and audits; idempotent for same version → Green: endpoint + service | TBD | 1d |
 | 6 — Forced-password-change endpoint | `POST /auth/trocar-senha-obrigatoria`: valid only while `deveTrocarSenha=true`, enforces password policy, updates hash, clears flag, audits, returns updated user | Red: failing tests — policy violation → 400; flag already false → 409; happy path updates hash + clears flag + audits → Green: endpoint + service | TBD | 1d |
 | 7 — Onboarding endpoint | `POST /super-admin/clinicas` under super-admin guard: generate temp password, call the onboarding facade, set `deveTrocarSenha=true` on the created admin, return clinic + admin + one-time password + 2FA key | Red: failing tests — non-super-admin → 403; duplicate CNPJ / e-mail → 409; happy path creates clinic + admin (flagged, 2FA provisioned) + `CLINIC_CREATED` audit; response carries the one-time secrets; partial failure leaves no orphan clinic → Green: endpoint + wiring | TBD | 1.5d |
@@ -693,17 +710,19 @@ rule: new tests only).
   current-password-check-free password change.
 - No change to the role model, the 2FA requirement, or token issuance.
 
-**Gate enforcement boundary (two layers, approved 2026-09-10).** The frontend
-router is the UX layer; the security boundary is a backend check in the
-per-request access-token validation, which already re-loads the full `User`.
-While any gate condition is unmet (`deveTrocarSenha = true`, or a `PSICOLOGO`
-with a stale/absent Terms version), every authenticated request is rejected
-with `403` **except** an allow-list: `POST /auth/aceitar-termos`,
-`POST /auth/trocar-senha-obrigatoria`, and `POST /auth/logout`. This closes
-the exposure of a token holder calling other API routes directly while a gate
-is active (most important for the terms gate — a `PSICOLOGO` must not read
-patient data before accepting the Terms). Cost: one predicate evaluation on
-an already-loaded object per authenticated request; no extra round-trip.
+**Gate enforcement boundary (two layers, approved 2026-09-10; backend
+mechanism revised 2026-09-10 — see §2.6).** The frontend router is the UX
+layer. The security boundary is a dedicated `AuthGatesGuard` on the
+authenticated controllers: the per-request access-token validation attaches
+the gate fields to `request.user` (reusing the DB load already there), and
+the guard returns `403` when a gate condition is unmet (`deveTrocarSenha =
+true`, or a `PSICOLOGO` whose recorded Terms version is stale/absent) unless
+the handler is marked `@GateExempt()` (`aceitar-termos`,
+`trocar-senha-obrigatoria`, `logout`). This closes the exposure of a token
+holder calling other API routes directly while a gate is active (most
+important for the terms gate — a `PSICOLOGO` must not read patient data
+before accepting the Terms). Cost: one predicate evaluation on an
+already-loaded object per authenticated request; no extra round-trip.
 
 **Temporary password handling.**
 - Generated server-side with a CSPRNG, high entropy (≥ 16 characters
@@ -768,7 +787,8 @@ population, and covered by regression tests.
 | Unit | Forced-password-change service | Policy violation → 400-class; flag already false → 409-class; happy path updates the hash, clears the flag, writes the audit event |
 | Unit | Onboarding service/endpoint wiring | Non-super-admin → 403; duplicate CNPJ / admin e-mail → 409; happy path creates clinic + admin (flagged `deveTrocarSenha=true`, 2FA provisioned) and writes `CLINIC_CREATED`; a forced failure of admin creation leaves no clinic behind |
 | Integration | The three endpoints | Guards enforced (401 / 403); status codes 400 / 409 / 200 as specified; one-time secrets present in the onboarding response and absent from any subsequent read |
-| Unit / integration | Backend gate guard | `deveTrocarSenha=true` → a normal authenticated request is `403` and each allow-list endpoint is not; `PSICOLOGO` with stale/absent terms version → same; both conditions unmet → still one `403` and the allow-list still passes; neither condition unmet → nothing is blocked; token refresh works while gated |
+| Unit | `AuthGatesGuard` + predicate | Predicate: `deveTrocarSenha=true` unmet; `PSICOLOGO` with absent/stale terms version unmet; non-`PSICOLOGO` never unmet by terms; nothing set → met. Guard: unmet + non-exempt handler → `403`; unmet + `@GateExempt()` handler → passes; met → passes; no `request.user` → passes (downstream of auth) |
+| Unit | `validateAccessPayload` enrichment | its return carries `deveTrocarSenha` and `termosAceitos` alongside the token payload |
 | Component / interaction | Web gate chain | `PSICOLOGO` + stale terms → terms screen; `deveTrocarSenha` → change-password screen; both → terms first, then password; direct navigation to a feature route while a gate is active returns to the gate; no gate → app renders; a pre-existing account with fields absent renders the app with no interception |
 | Component / interaction | Accept-terms + change-password screens | Terms text and version rendered; accept requires an explicit action; policy errors surfaced on the password screen; each success advances the chain |
 | Component / interaction | Nova clínica dialog | Required fields validated; success shows the one-time password + 2FA key once with the warning; clinic list refetched |
@@ -809,7 +829,7 @@ channel exists.
 | `forced_password_changes` | Count of `FORCED_PASSWORD_CHANGED` audit events | None — dashboard signal; should track new-clinic count | No new code — derived from the audit event |
 | `terms_acceptances` | Count of `TERMS_ACCEPTED` audit events, by version | None — dashboard signal; a spike after a version bump is expected | No new code — derived from the audit event |
 | `gate_endpoint_4xx` | Rate of 400/409 on the two gate endpoints | Medium — sustained elevated rate suggests a web bug driving out-of-state calls | Phase 13 — structured `warn` log with `status` before each 400/409 throw |
-| `gate_guard_rejections` | Count of `403`s from the backend gate check, by `gate` | Medium — a spike right after deploy suggests the predicate or allow-list is wrong and legitimate users are locked out (rollback trigger) | Phase 2b — structured `warn` log when the gate guard rejects a request |
+| `gate_guard_rejections` | Count of `403`s from `AuthGatesGuard`, by `gate` | Medium — a spike right after deploy suggests the predicate or a missing `@GateExempt()` is locking out legitimate users (rollback trigger) | Phase 2b — structured `warn` log when the guard rejects a request |
 
 **Structured log format.** JSON lines, consistent with the rest of the API:
 `{ level, msg, event, userId, clinicaId?, gate?, stage?, status? }`. Emitted
@@ -841,7 +861,7 @@ needed.
 - The two new `User` fields are additive and inert if unused — **left in
   place** on rollback (no down-migration, no data deletion).
 - A rolled-back API stops writing the new fields, stops exposing them in the
-  login response, drops the backend gate check, and the new endpoints 404.
+  login response, drops the `AuthGatesGuard`, and the new endpoints 404.
   Accounts already flagged `deveTrocarSenha=true` simply have no gate until a
   fixed version ships — acceptable (a rolled-back state is strictly less
   restrictive, never a lockout).
@@ -852,7 +872,7 @@ needed.
 | Rollback trigger | Condition |
 |------------------|-----------|
 | Login regression for existing users after deploy | Any report/measure of a pre-existing account being blocked or failing to log in |
-| `gate_guard_rejections` spikes right after deploy | The backend gate check is locking out legitimate users (bad predicate or allow-list) |
+| `gate_guard_rejections` spikes right after deploy | `AuthGatesGuard` is locking out legitimate users (bad predicate or a gate endpoint missing `@GateExempt()`) |
 | `onboarding_partial_failure` fires | The onboarding endpoint is leaving inconsistent state |
 | `auth_gate_persist_failure` sustained | Users completing a gate are not being let through |
 
@@ -876,8 +896,8 @@ needed.
   written through it; requires the request IP + user agent (already available
   on the super-admin and auth request paths).
 - **Existing per-request access-token validation** — already loads the full
-  `User`; the hook point if backend gate enforcement is added (Open
-  Question #1).
+  `User`; extended in Phase 2b to attach the gate fields to `request.user`
+  (no new DB load). The `AuthGatesGuard` consumes those fields.
 - **Existing one-time-secret display component** (used today for 2FA setup in
   user creation) — reused by the Nova clínica dialog.
 - **Existing web auth context + `ProtectedRoute`** — the gate chain composes
@@ -897,7 +917,7 @@ needed.
 
 | # | Question | Owner | Status |
 |---|----------|-------|--------|
-| 1 | Backend hard-enforcement of the gate chain on protected API routes | Eng | **Resolved 2026-09-10 — approved for V1.** A central check in the per-request access-token validation rejects authenticated requests with `403` while any gate condition is unmet, except the allow-list (`aceitar-termos`, `trocar-senha-obrigatoria`, `logout`). Reflected in §2.6, §9, §6, §7, §8 (Phase 2b), §10. Both feature files amended (`Solution and trade-offs`). |
+| 1 | Backend hard-enforcement of the gate chain on protected API routes | Eng | **Resolved 2026-09-10 — approved for V1.** Mechanism (revised 2026-09-10): `validateAccessPayload` attaches the gate fields to `request.user`; a dedicated `AuthGatesGuard` on the authenticated controllers returns `403` while any gate is unmet, except handlers marked `@GateExempt()` (`aceitar-termos`, `trocar-senha-obrigatoria`, `logout`). Reflected in §2.6, §9, §6, §7, §8 (Phase 2b), §10. Both feature files amended (`Solution and trade-offs`). |
 | 2 | Endpoint names — `/auth/aceitar-termos` and `/auth/trocar-senha-obrigatoria` (Portuguese, matching domain routes) vs. English (matching the other `/auth/*` routes) | Eng | **Open** — cosmetic; pick at implementation. Contracts in §2.5 stand regardless. |
 | 3 | Project-wide schema/repository test rigor — the suite has no database layer, so schema defaults and the migration invariant are asserted DB-free and by review, as in every other module | Eng | **Out of scope for this feature** — same standing decision as the AI-audit TDD §14 #6. |
 | 4 | Should a Terms version bump invalidate active `PSICOLOGO` sessions (force re-login so the gate fires immediately) rather than waiting for the next login/refresh | Product | **Resolved for V1 — no.** Gate evaluated at login/refresh; an active session continues until then. Revisit only if a future Terms change is urgent enough to require immediate re-acceptance. |

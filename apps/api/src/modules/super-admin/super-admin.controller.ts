@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { AuthGatesGuard } from '../auth/presentation/guards/auth-gates.guard';
 import { JwtAuthGuard } from '../auth/presentation/guards/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/presentation/guards/super-admin.guard';
 import { AllowWithoutTenant } from '../../common/tenancy/tenant-required.guard';
@@ -10,7 +11,7 @@ import { ResetPasswordDto } from './application/dto/reset-password.dto';
 import { UpdateClinicaDto } from './application/dto/update-clinica.dto';
 
 @Controller('super-admin')
-@UseGuards(JwtAuthGuard, SuperAdminGuard)
+@UseGuards(JwtAuthGuard, AuthGatesGuard, SuperAdminGuard)
 @AllowWithoutTenant()
 export class SuperAdminController {
   constructor(private readonly service: SuperAdminService) {}
