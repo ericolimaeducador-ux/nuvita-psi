@@ -1,4 +1,11 @@
-import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as speakeasy from 'speakeasy';
 import { AppConfigService } from '../../../common/security/config.service';
@@ -19,12 +26,22 @@ export interface OnboardingContext {
   userAgent: string;
 }
 
+/** Opções do onboard vindas de quem NÃO é a CLI (hoje: painel do super-admin). */
+export interface OnboardingOptions {
+  /** Admin nasce com troca de senha obrigatória (senha temporária gerada). */
+  deveTrocarSenha?: boolean;
+  /** Quem disparou a criação — atribui o CLINIC_CREATED a ele, não ao admin criado. */
+  atorUserId?: string;
+}
+
 export interface ClinicAdminContext extends OnboardingContext {
   user: AuthTokenPayload;
 }
 
 @Injectable()
 export class ClinicasService {
+  private readonly logger = new Logger(ClinicasService.name);
+
   constructor(
     @Inject(CLINICA_REPOSITORY) private readonly clinicas: ClinicaRepository,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
@@ -32,7 +49,11 @@ export class ClinicasService {
     private readonly configService: AppConfigService,
   ) {}
 
-  async onboard(dto: CreateClinicaDto, context: OnboardingContext): Promise<{
+  async onboard(
+    dto: CreateClinicaDto,
+    context: OnboardingContext,
+    options?: OnboardingOptions,
+  ): Promise<{
     clinica: Clinica;
     admin: { id: string; nome: string; email: string; papel: Papel; clinicaId?: string | null };
     limites: (typeof LIMITES_POR_PLANO)[Clinica['plano']];
@@ -58,24 +79,40 @@ export class ClinicasService {
 
     const adminEmail = dto.primeiroAdmin.email.toLowerCase();
     const twoFactorSetup = this.buildTwoFactorSetup(Papel.ADMIN, adminEmail);
-    const admin = await this.users.create({
-      nome: dto.primeiroAdmin.nome,
-      email: adminEmail,
-      passwordHash: await this.hashPassword(dto.primeiroAdmin.password),
-      papel: Papel.ADMIN,
-      clinicaId: clinica.id,
-      twoFactorSecret: twoFactorSetup?.base32,
-    });
+
+    let admin;
+    try {
+      admin = await this.users.create({
+        nome: dto.primeiroAdmin.nome,
+        email: adminEmail,
+        passwordHash: await this.hashPassword(dto.primeiroAdmin.password),
+        papel: Papel.ADMIN,
+        clinicaId: clinica.id,
+        twoFactorSecret: twoFactorSetup?.base32,
+        deveTrocarSenha: options?.deveTrocarSenha,
+      });
+    } catch (error) {
+      // Clínica sem admin é lixo — compensa para não deixar órfã. Se a
+      // compensação também falhar, registra: sobra limpeza manual.
+      await this.clinicas.delete(clinica.id).catch((cleanupError) => {
+        this.logger.error(
+          `Onboarding falhou ao criar o admin E a compensacao da clinica ${clinica.id} falhou. ` +
+            `Clinica orfa — limpeza manual necessaria. ${cleanupError}`,
+        );
+      });
+      throw error;
+    }
 
     await this.auditLogs.create({
       event: AuditEvent.CLINIC_CREATED,
-      userId: admin.id,
+      userId: options?.atorUserId ?? admin.id,
       email: admin.email,
       ip: context.ip,
       userAgent: context.userAgent,
       metadata: {
         clinicaId: clinica.id,
         plano: clinica.plano,
+        ...(options?.atorUserId ? { adminId: admin.id } : {}),
       },
     });
 

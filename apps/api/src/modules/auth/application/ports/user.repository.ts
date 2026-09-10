@@ -9,6 +9,8 @@ export interface CreateUserInput {
   clinicaId?: string | null;
   twoFactorSecret?: string;
   registroProfissional?: string;
+  /** true = troca de senha obrigatória no 1º login (feature-forced-password-change). */
+  deveTrocarSenha?: boolean;
 }
 
 export interface UpdateUserInput {

@@ -18,6 +18,7 @@ export class UserMongoRepository implements UserRepository {
       clinicaId: input.clinicaId,
       '2faSecret': input.twoFactorSecret,
       registroProfissional: input.registroProfissional,
+      deveTrocarSenha: input.deveTrocarSenha,
       ativo: true,
     });
 

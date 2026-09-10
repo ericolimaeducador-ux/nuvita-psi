@@ -6,12 +6,21 @@ import { USER_REPOSITORY } from '../auth/auth.constants';
 import { UserRepository } from '../auth/application/ports/user.repository';
 import { toPublicUser } from '../auth/domain/user.entity';
 import { AppConfigService } from '../../common/security/config.service';
+import { gerarSenhaTemporaria } from '../../common/security/gerar-senha-temporaria';
 import { CLINICA_REPOSITORY } from '../clinicas/clinicas.constants';
 import { ClinicaRepository } from '../clinicas/application/ports/clinica.repository';
+import { ClinicasService } from '../clinicas/application/clinicas.service';
 import { ListUsersQueryDto } from './application/dto/list-users-query.dto';
 import { UpdateUserDto } from './application/dto/update-user.dto';
 import { CreateAdminUserDto } from './application/dto/create-admin-user.dto';
+import { CriarClinicaDto } from './application/dto/criar-clinica.dto';
 import { UpdateClinicaDto } from './application/dto/update-clinica.dto';
+
+export interface CriarClinicaContext {
+  ip: string;
+  userAgent: string;
+  userId: string;
+}
 
 @Injectable()
 export class SuperAdminService {
@@ -19,7 +28,49 @@ export class SuperAdminService {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(CLINICA_REPOSITORY) private readonly clinicas: ClinicaRepository,
     private readonly configService: AppConfigService,
+    private readonly clinicasService: ClinicasService,
   ) {}
+
+  /**
+   * Cria uma clínica nova + o primeiro ADMIN dela pela UI do super-admin
+   * (feature-super-admin-clinic-onboarding). Reaproveita o onboard() já
+   * testado; a senha do admin é GERADA aqui (nunca digitada pelo super-admin)
+   * e o admin nasce com troca obrigatória no 1º login.
+   *
+   * Retorna a senha temporária e o 2FA UMA vez — o super-admin repassa ao
+   * cliente por fora (hoje: WhatsApp).
+   */
+  async criarClinica(dto: CriarClinicaDto, context: CriarClinicaContext) {
+    const senhaTemporaria = gerarSenhaTemporaria();
+
+    const result = await this.clinicasService.onboard(
+      {
+        nome: dto.clinica.nome,
+        cnpj: dto.clinica.cnpj,
+        plano: dto.clinica.plano,
+        configuracoes: {
+          fusoHorario: dto.clinica.fusoHorario,
+          duracaoConsultaPadrao: dto.clinica.duracaoConsultaPadrao,
+        },
+        primeiroAdmin: {
+          nome: dto.primeiroAdmin.nome,
+          email: dto.primeiroAdmin.email,
+          password: senhaTemporaria,
+        },
+      },
+      { ip: context.ip, userAgent: context.userAgent },
+      { deveTrocarSenha: true, atorUserId: context.userId },
+    );
+
+    return {
+      clinica: result.clinica,
+      admin: result.admin,
+      senhaTemporaria,
+      twoFactorSetup: result.twoFactorSetup
+        ? { base32: result.twoFactorSetup.base32 }
+        : undefined,
+    };
+  }
 
   async listClinicas() {
     const clinicas = await this.clinicas.findAll();
