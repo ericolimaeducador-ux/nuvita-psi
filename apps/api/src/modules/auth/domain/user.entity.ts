@@ -1,5 +1,11 @@
 import { Modulo, Papel, resolvePermissoes } from '../../../../../../packages/shared/src/auth';
 
+/** Aceite dos Termos de Uso do profissional (feature-terms-of-service-acceptance). */
+export interface TermosAceitos {
+  versao: string;
+  dataAceite: Date;
+}
+
 export interface User {
   id: string;
   nome: string;
@@ -12,6 +18,10 @@ export interface User {
   registroProfissional?: string;
   ativo: boolean;
   criadoEm: Date;
+  /** Troca de senha obrigatória no próximo login (feature-forced-password-change). Ausente = false. */
+  deveTrocarSenha: boolean;
+  /** Aceite dos Termos de Uso (feature-terms-of-service-acceptance). null/ausente = não aceito. */
+  termosAceitos?: TermosAceitos | null;
   /** Exceções por usuário sobre o padrão do papel (ver resolvePermissoes). */
   modulosConcedidos?: Modulo[];
   modulosRevogados?: Modulo[];

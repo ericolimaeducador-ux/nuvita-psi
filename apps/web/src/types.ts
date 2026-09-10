@@ -205,6 +205,12 @@ export function temPermissao(permissoes: Modulo[] | undefined, modulo: Modulo): 
   return !!permissoes && permissoes.includes(modulo);
 }
 
+/** Aceite dos Termos de Uso do profissional (feature-terms-of-service-acceptance). */
+export interface TermosAceitos {
+  versao: string;
+  dataAceite: string;
+}
+
 export interface AuthUser {
   id: string;
   nome?: string;
@@ -215,6 +221,10 @@ export interface AuthUser {
   registroProfissional?: string;
   /** Permissões efetivas calculadas pela API; ausente em sessões antigas. */
   permissoes?: Modulo[];
+  /** Troca de senha obrigatória no próximo login (feature-forced-password-change). Ausente em sessões antigas. */
+  deveTrocarSenha?: boolean;
+  /** Aceite dos Termos de Uso (feature-terms-of-service-acceptance). null/ausente = não aceito. */
+  termosAceitos?: TermosAceitos | null;
 }
 
 /** Rótulo do registro profissional conforme o papel (CRM/COREN/OAB). */

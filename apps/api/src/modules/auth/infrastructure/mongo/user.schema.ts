@@ -4,6 +4,19 @@ import { Modulo, Papel } from '../../../../../../../packages/shared/src/auth';
 
 export type UserDocument = HydratedDocument<UserMongo>;
 
+// Aceite dos Termos de Uso do profissional (feature-terms-of-service-acceptance).
+// Formato espelha ConsentimentoLGPDMongo do paciente — mesma convenção já validada.
+@Schema({ _id: false, versionKey: false })
+export class TermosAceitosMongo {
+  @Prop({ required: true })
+  versao!: string;
+
+  @Prop({ required: true })
+  dataAceite!: Date;
+}
+
+const TermosAceitosSchema = SchemaFactory.createForClass(TermosAceitosMongo);
+
 @Schema({ collection: 'users', versionKey: false })
 export class UserMongo {
   @Prop({ required: true, trim: true })
@@ -41,6 +54,16 @@ export class UserMongo {
 
   @Prop({ default: Date.now, immutable: true })
   criadoEm!: Date;
+
+  // Troca de senha obrigatória no 1º login (feature-forced-password-change).
+  // Nasce false; só o onboarding de clínica seta true. Ausente em docs antigos = false.
+  @Prop({ default: false })
+  deveTrocarSenha!: boolean;
+
+  // Aceite dos Termos de Uso (feature-terms-of-service-acceptance).
+  // Ausente/null = nunca aceitou. Reaceite obrigatório a cada nova versão do termo.
+  @Prop({ type: TermosAceitosSchema })
+  termosAceitos?: TermosAceitosMongo;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserMongo);
