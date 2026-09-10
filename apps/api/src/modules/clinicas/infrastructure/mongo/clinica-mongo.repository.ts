@@ -38,6 +38,10 @@ export class ClinicaMongoRepository implements ClinicaRepository {
     return documents.map((document) => this.toEntity(document));
   }
 
+  async delete(id: string): Promise<void> {
+    await this.model.findByIdAndDelete(id).exec();
+  }
+
   async update(id: string, input: UpdateClinicaInput): Promise<Clinica | null> {
     const update: Record<string, unknown> = {};
     if (input.nome !== undefined) update.nome = input.nome;

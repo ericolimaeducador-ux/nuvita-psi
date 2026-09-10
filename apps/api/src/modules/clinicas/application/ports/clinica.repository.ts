@@ -15,4 +15,6 @@ export interface ClinicaRepository {
   findByCnpj(cnpj: string): Promise<Clinica | null>;
   findAll(): Promise<Clinica[]>;
   update(id: string, input: UpdateClinicaInput): Promise<Clinica | null>;
+  /** Usado só para compensar onboarding parcial (admin não criado). Não é operação de produto. */
+  delete(id: string): Promise<void>;
 }
