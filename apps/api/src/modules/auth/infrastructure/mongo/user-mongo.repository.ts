@@ -102,6 +102,10 @@ export class UserMongoRepository implements UserRepository {
       registroProfissional: object.registroProfissional,
       ativo: object.ativo,
       criadoEm: object.criadoEm,
+      deveTrocarSenha: object.deveTrocarSenha ?? false,
+      termosAceitos: object.termosAceitos
+        ? { versao: object.termosAceitos.versao, dataAceite: object.termosAceitos.dataAceite }
+        : null,
       modulosConcedidos: object.modulosConcedidos,
       modulosRevogados: object.modulosRevogados,
     };
