@@ -75,6 +75,33 @@ ela envolve?"* — recorded verbatim (Portuguese) as given by the user:
 
 **Amendment (2026-09-10) — enforcement is two-layer, not router-only.**
 
+**Amendment (2026-09-10) — scope extends to `ADMIN`.**
+
+The verbatim answer above scopes the terms gate to `PSICOLOGO` only
+("Escopo: só PSICOLOGO"). That scope is amended, not replaced: the gate now
+also applies to `ADMIN`.
+
+- **New scope:** `PSICOLOGO` and `ADMIN`. `SECRETARIA` remains out of scope
+  (and so does `PACIENTE`, `SUPER_ADMIN`).
+- **Reason:** while testing the real onboarding flow, the user identified
+  that the first `ADMIN` of a clinic is frequently the psychologist/
+  professional responsible for the clinic themselves (see
+  [[feature-super-admin-clinic-onboarding]]) — someone who should also
+  formally accept the Terms of Use. It made no sense for the gate to skip
+  exactly the person who, in practice, is usually the one attending
+  patients.
+- Both enforcement layers documented in the amendment above (frontend
+  router / app shell, and the backend `AuthGatesGuard`) apply the same
+  widened scope — they must stay in sync, per the existing
+  ⚠️ SINCRONIA MANUAL comments in `apps/api/src/modules/auth/domain/
+  auth-gates.ts` and `apps/web/src/auth/GateChain.tsx`.
+- The *Flow* and *Error cases* sections below still say "PSICOLOGO" from
+  the original answer; read every such reference there as "PSICOLOGO or
+  ADMIN" per this amendment. The *Acceptance criteria* item "non-PSICOLOGO
+  roles are never gated by the terms mechanism" is superseded by: SECRETARIA
+  and PACIENTE are never gated by the terms mechanism; PSICOLOGO and ADMIN
+  are.
+
 The verbatim answer above describes the interception as being at the same
 frontend router level as `feature-forced-password-change`. The approved design
 (`my_docs/tdd-clinic-onboarding-and-auth-gates.md`, §2.6 and §9) makes
