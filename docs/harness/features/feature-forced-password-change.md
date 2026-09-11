@@ -82,6 +82,31 @@ ela envolve?"* — recorded verbatim (Portuguese) as given by the user:
 > aberta pra outros fluxos futuros (ex.: reset de senha feito por um admin)
 > reaproveitarem o mesmo mecanismo sem reconstruir nada.
 
+**Amendment (2026-09-11) — scope extends to PSICOLOGO creation by the
+clinic admin and by the platform super-admin.**
+
+The verbatim answer above scopes who sets `deveTrocarSenha = true` to "quem
+cria o usuário" without naming a specific creation path beyond clinic
+onboarding. That scope is amended, not replaced: two additional creation
+points now set it too, both confirmed to already use the same
+`CreateUserInput` port this feature introduced (no new infrastructure):
+
+- `ClinicasService.createUsuario()` (`POST /clinicas/:clinicaId/usuarios`) —
+  the endpoint a clinic `ADMIN` uses to create a `PSICOLOGO` or `SECRETARIA`
+  under their own clinic. Sets `deveTrocarSenha: true` when the role created
+  is `PSICOLOGO`; `SECRETARIA` is unaffected.
+- `SuperAdminService.createUsuario()` (the platform super-admin's generic
+  user-creation endpoint, unrestricted by role) — same rule: `true` when the
+  role created is `PSICOLOGO`, regardless of clinic.
+
+Reason: a psychologist created through either path also receives a
+system-generated password handed over through an informal channel (the same
+WhatsApp-handoff exposure this feature was built to close for the clinic
+admin case) — there is no reason the mandatory-change guarantee should stop
+at the first admin of a clinic when the same exposure exists for every
+psychologist created afterward, by either an admin or the platform
+super-admin.
+
 **Amendment (2026-09-10) — enforcement is two-layer, not router-only.**
 
 The verbatim answer above describes the interception as frontend router-level.
