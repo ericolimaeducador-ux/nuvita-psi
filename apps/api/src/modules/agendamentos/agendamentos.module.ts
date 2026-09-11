@@ -6,6 +6,7 @@ import { AuditLogMongoRepository } from '../auth/infrastructure/mongo/audit-log-
 import { AuditLogMongo, AuditLogSchema } from '../auth/infrastructure/mongo/audit-log.schema';
 import { JwtAuthGuard } from '../auth/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/presentation/guards/roles.guard';
+import { NotificacoesModule } from '../notificacoes/notificacoes.module';
 import { PacientesModule } from '../pacientes/pacientes.module';
 import { AgendamentosService } from './application/agendamentos.service';
 import { AGENDAMENTO_REPOSITORY } from './agendamentos.constants';
@@ -27,6 +28,7 @@ import { AgendamentosController } from './presentation/agendamentos.controller';
       { name: AuditLogMongo.name, schema: AuditLogSchema },
     ]),
     PacientesModule,
+    NotificacoesModule,
   ],
   controllers: [AgendamentosController],
   providers: [
