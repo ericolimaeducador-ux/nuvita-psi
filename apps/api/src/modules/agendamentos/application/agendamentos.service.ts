@@ -1,8 +1,9 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuthTokenPayload, Papel } from '../../../../../../packages/shared/src/auth';
 import { resolveTenantClinicaId } from '../../../common/tenancy/resolve-clinica-id';
-import { AUDIT_LOG_REPOSITORY } from '../../auth/auth.constants';
+import { AUDIT_LOG_REPOSITORY, USER_REPOSITORY } from '../../auth/auth.constants';
 import { AuditLogRepository } from '../../auth/application/ports/audit-log.repository';
+import { UserRepository } from '../../auth/application/ports/user.repository';
 import { AuditEvent } from '../../auth/domain/audit-event.enum';
 import { CreateNotificacaoDto } from '../../notificacoes/application/dto/create-notificacao.dto';
 import { NotificacoesService } from '../../notificacoes/application/notificacoes.service';
@@ -33,6 +34,7 @@ export class AgendamentosService {
     @Inject(AUDIT_LOG_REPOSITORY) private readonly auditLogs: AuditLogRepository,
     private readonly pacientesService: PacientesService,
     private readonly notificacoesService: NotificacoesService,
+    @Inject(USER_REPOSITORY) private readonly users: UserRepository,
   ) {}
 
   async create(dto: CreateAgendamentoDto, context: RequestAuditContext) {
@@ -246,6 +248,8 @@ export class AgendamentosService {
       return;
     }
 
+    const nomeMedico = await this.resolverNomeMedico(agendamento.medicoId);
+
     try {
       await this.notificacoesService.create(
         {
@@ -255,12 +259,34 @@ export class AgendamentosService {
           canal: CanalNotificacao.EMAIL,
           email: paciente.email,
           nome: paciente.nome,
+          medico: nomeMedico,
           hora: this.formatarDataHora(agendamento.dataHoraInicio),
         } as CreateNotificacaoDto,
         context,
       );
     } catch (error) {
       this.logFalhaNotificacao(TipoNotificacao.CONFIRMACAO_AGENDAMENTO, clinicaId, agendamento.id, error);
+    }
+  }
+
+  /**
+   * Nome do profissional pro template de confirmação — `medicoId` não é
+   * necessariamente `context.user`: SECRETARIA/ADMIN podem criar o
+   * agendamento em nome de um profissional diferente. Mesmo tratamento de
+   * efeito colateral dos outros dados enriquecidos aqui: "não encontrado"
+   * (medicoId inválido/removido) é um caminho normal, sem log — só
+   * `findById()` lançar é uma falha de verdade, e essa é logada
+   * (notification_data_enrichment_failed), distinto de
+   * notification_trigger_failed: aqui a notificação ainda é enviada, só sem
+   * o nome do médico — lá a notificação inteira não sai.
+   */
+  private async resolverNomeMedico(medicoId: string): Promise<string | undefined> {
+    try {
+      const medico = await this.users.findById(medicoId);
+      return medico?.nome;
+    } catch (error) {
+      this.logFalhaEnriquecimento('medico', medicoId, error);
+      return undefined;
     }
   }
 
@@ -286,6 +312,26 @@ export class AgendamentosService {
         tipo,
         clinicaId,
         agendamentoId,
+        erro: error instanceof Error ? error.message : String(error),
+      }),
+    );
+  }
+
+  /**
+   * Falha ao enriquecer um dado (ex.: nome do médico) usado num template de
+   * notificação — escopo e severidade diferentes de notification_trigger_failed:
+   * aqui a notificação ainda sai, só incompleta; lá ela não sai nenhuma.
+   * Nomes de evento distintos de propósito, pra não esconder essa diferença
+   * de quem investigar o log depois.
+   */
+  private logFalhaEnriquecimento(campo: string, medicoId: string, error: unknown): void {
+    this.logger.warn(
+      JSON.stringify({
+        level: 'warn',
+        msg: 'Falha ao enriquecer dado de notificacao; notificacao segue sem esse campo.',
+        event: 'notification_data_enrichment_failed',
+        campo,
+        medicoId,
         erro: error instanceof Error ? error.message : String(error),
       }),
     );
