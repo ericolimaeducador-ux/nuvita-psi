@@ -1,11 +1,16 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AuthTokenPayload } from '../../../../../../packages/shared/src/auth';
 import { RequestMeta } from '../../../common/http/client-ip';
+import { AppConfigService } from '../../../common/security/config.service';
 import { resolveTenantClinicaId } from '../../../common/tenancy/resolve-clinica-id';
 import { AUDIT_LOG_REPOSITORY } from '../../auth/auth.constants';
 import { AuditLogRepository } from '../../auth/application/ports/audit-log.repository';
 import { AuditEvent } from '../../auth/domain/audit-event.enum';
+import { CreateNotificacaoDto } from '../../notificacoes/application/dto/create-notificacao.dto';
+import { NotificacoesService } from '../../notificacoes/application/notificacoes.service';
+import { CanalNotificacao, TipoNotificacao } from '../../notificacoes/domain/notificacao.entity';
+import { PacientesService } from '../../pacientes/application/pacientes.service';
 import {
   SALA_EVENTO_REPOSITORY,
   SALA_TELEMEDICINA_REPOSITORY,
@@ -46,11 +51,16 @@ export interface SalaAcessoView {
 
 @Injectable()
 export class TelemedicinaService {
+  private readonly logger = new Logger(TelemedicinaService.name);
+
   constructor(
     @Inject(SALA_TELEMEDICINA_REPOSITORY) private readonly salas: SalaTelemedicinaRepository,
     @Inject(SALA_EVENTO_REPOSITORY) private readonly eventos: SalaEventoRepository,
     @Inject(SINAL_SALA_REPOSITORY) private readonly sinais: SinalSalaRepository,
     @Inject(AUDIT_LOG_REPOSITORY) private readonly auditLogs: AuditLogRepository,
+    private readonly pacientesService: PacientesService,
+    private readonly notificacoesService: NotificacoesService,
+    private readonly configService: AppConfigService,
   ) {}
 
   async createSala(dto: CreateSalaDto, context: RequestAuditContext) {
@@ -71,6 +81,9 @@ export class TelemedicinaService {
     });
 
     await this.audit(AuditEvent.TELEMEDICINE_ROOM_CREATED, context, { clinicaId, salaId: sala.id, modalidade: sala.modalidade });
+
+    await this.notificarLinkTeleconsulta(sala, clinicaId, context);
+
     return sala;
   }
 
@@ -316,5 +329,73 @@ export class TelemedicinaService {
       userAgent: context.userAgent,
       metadata,
     });
+  }
+
+  /**
+   * Dispara a notificação de link da teleconsulta (LINK_TELECONSULTA) via
+   * NotificacoesService.create() — mesmo padrão de
+   * AgendamentosService.notificarConfirmacaoAgendamento(): método público
+   * (enfileira no BullMQ de verdade), efeito colateral não crítico, falha
+   * logada (fail-closed com visibilidade) e nunca derruba a criação da sala.
+   */
+  private async notificarLinkTeleconsulta(
+    sala: SalaTelemedicina,
+    clinicaId: string,
+    context: RequestAuditContext,
+  ): Promise<void> {
+    const paciente = (await this.pacientesService.resumoPorIds(clinicaId, [sala.pacienteId])).get(
+      sala.pacienteId,
+    );
+    if (!paciente?.email) {
+      return;
+    }
+
+    try {
+      await this.notificacoesService.create(
+        {
+          clinicaId,
+          destinatarioId: sala.pacienteId,
+          tipo: TipoNotificacao.LINK_TELECONSULTA,
+          canal: CanalNotificacao.EMAIL,
+          email: paciente.email,
+          nome: paciente.nome,
+          link: this.buildLinkTeleconsulta(sala.tokenPaciente),
+        } as CreateNotificacaoDto,
+        context,
+      );
+    } catch (error) {
+      this.logFalhaNotificacao(TipoNotificacao.LINK_TELECONSULTA, clinicaId, sala.id, error);
+    }
+  }
+
+  private buildLinkTeleconsulta(tokenPaciente: string): string {
+    // Assume que a primeira entrada de CORS_ORIGIN é o domínio canônico do
+    // frontend em produção (não existe uma env var dedicada a "URL pública do
+    // app" hoje — reaproveitamos a que já existe em vez de criar infra nova).
+    // Se essa env var mudar de ordem, ou ganhar múltiplas origens por outro
+    // motivo (ex.: adicionar um domínio de staging antes do de produção), o
+    // link do e-mail muda junto, mesmo sem nenhuma intenção relacionada a
+    // notificação.
+    const baseUrl = this.configService.getConfig().corsOrigin[0];
+    return `${baseUrl}/tele/${tokenPaciente}`;
+  }
+
+  private logFalhaNotificacao(
+    tipo: TipoNotificacao,
+    clinicaId: string,
+    salaId: string,
+    error: unknown,
+  ): void {
+    this.logger.warn(
+      JSON.stringify({
+        level: 'warn',
+        msg: 'Falha ao acionar notificacao pos-criacao de sala de telemedicina; sala foi criada normalmente.',
+        event: 'notification_trigger_failed',
+        tipo,
+        clinicaId,
+        salaId,
+        erro: error instanceof Error ? error.message : String(error),
+      }),
+    );
   }
 }

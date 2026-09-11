@@ -142,11 +142,11 @@ export class PacientesService {
   async resumoPorIds(
     clinicaId: string,
     pacienteIds: string[],
-  ): Promise<Map<string, { nome: string; cpf?: string }>> {
+  ): Promise<Map<string, { nome: string; cpf?: string; email?: string }>> {
     const unicos = [...new Set(pacienteIds.filter(Boolean))];
     if (unicos.length === 0) return new Map();
     const pacientes = await this.pacientes.findManyByIds(clinicaId, unicos);
-    return new Map(pacientes.map((p) => [p.id, { nome: p.nome, cpf: p.cpf }]));
+    return new Map(pacientes.map((p) => [p.id, { nome: p.nome, cpf: p.cpf, email: p.email }]));
   }
 
   async update(

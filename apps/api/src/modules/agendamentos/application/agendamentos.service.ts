@@ -1,12 +1,15 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuthTokenPayload, Papel } from '../../../../../../packages/shared/src/auth';
 import { resolveTenantClinicaId } from '../../../common/tenancy/resolve-clinica-id';
 import { AUDIT_LOG_REPOSITORY } from '../../auth/auth.constants';
 import { AuditLogRepository } from '../../auth/application/ports/audit-log.repository';
 import { AuditEvent } from '../../auth/domain/audit-event.enum';
+import { CreateNotificacaoDto } from '../../notificacoes/application/dto/create-notificacao.dto';
+import { NotificacoesService } from '../../notificacoes/application/notificacoes.service';
+import { CanalNotificacao, TipoNotificacao } from '../../notificacoes/domain/notificacao.entity';
 import { PacientesService } from '../../pacientes/application/pacientes.service';
 import { AGENDAMENTO_REPOSITORY } from '../agendamentos.constants';
-import { ModalidadeAtendimento, StatusAgendamento, TipoAgendamento } from '../domain/agendamento.entity';
+import { Agendamento, ModalidadeAtendimento, StatusAgendamento, TipoAgendamento } from '../domain/agendamento.entity';
 import { CancelAgendamentoDto } from './dto/cancel-agendamento.dto';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
@@ -23,10 +26,13 @@ export interface RequestAuditContext {
 
 @Injectable()
 export class AgendamentosService {
+  private readonly logger = new Logger(AgendamentosService.name);
+
   constructor(
     @Inject(AGENDAMENTO_REPOSITORY) private readonly agendamentos: AgendamentoRepository,
     @Inject(AUDIT_LOG_REPOSITORY) private readonly auditLogs: AuditLogRepository,
     private readonly pacientesService: PacientesService,
+    private readonly notificacoesService: NotificacoesService,
   ) {}
 
   async create(dto: CreateAgendamentoDto, context: RequestAuditContext) {
@@ -45,6 +51,8 @@ export class AgendamentosService {
     });
 
     await this.audit(AuditEvent.APPOINTMENT_CREATED, context, { clinicaId, agendamentoId: agendamento.id });
+
+    await this.notificarConfirmacaoAgendamento(agendamento, clinicaId, context);
 
     return agendamento;
   }
@@ -211,5 +219,75 @@ export class AgendamentosService {
       userAgent: context.userAgent,
       metadata,
     });
+  }
+
+  /**
+   * Dispara a notificação de confirmação de agendamento (CONFIRMACAO_AGENDAMENTO)
+   * via NotificacoesService.create() — o método público, que faz o check de
+   * opt-out, renderiza o template e ENFILEIRA no BullMQ (o worker processa o
+   * envio de fato depois). Não usa notificarElegibilidade(): aquele método
+   * grava direto no repositório e nunca enfileira, então nunca chega a enviar.
+   *
+   * Efeito colateral, não crítico: se o paciente não tem e-mail cadastrado ou
+   * se NotificacoesService.create() falhar por qualquer motivo, o agendamento
+   * já foi criado e não deve ser desfeito — mas a falha é logada (fail-closed
+   * com visibilidade, mesmo padrão de feature-ai-usage-audit-trail), nunca
+   * engolida em silêncio total.
+   */
+  private async notificarConfirmacaoAgendamento(
+    agendamento: Agendamento,
+    clinicaId: string,
+    context: RequestAuditContext,
+  ): Promise<void> {
+    const paciente = (await this.pacientesService.resumoPorIds(clinicaId, [agendamento.pacienteId])).get(
+      agendamento.pacienteId,
+    );
+    if (!paciente?.email) {
+      return;
+    }
+
+    try {
+      await this.notificacoesService.create(
+        {
+          clinicaId,
+          destinatarioId: agendamento.pacienteId,
+          tipo: TipoNotificacao.CONFIRMACAO_AGENDAMENTO,
+          canal: CanalNotificacao.EMAIL,
+          email: paciente.email,
+          nome: paciente.nome,
+          hora: this.formatarDataHora(agendamento.dataHoraInicio),
+        } as CreateNotificacaoDto,
+        context,
+      );
+    } catch (error) {
+      this.logFalhaNotificacao(TipoNotificacao.CONFIRMACAO_AGENDAMENTO, clinicaId, agendamento.id, error);
+    }
+  }
+
+  private formatarDataHora(data: Date): string {
+    return new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      timeZone: 'America/Sao_Paulo',
+    }).format(data);
+  }
+
+  private logFalhaNotificacao(
+    tipo: TipoNotificacao,
+    clinicaId: string,
+    agendamentoId: string,
+    error: unknown,
+  ): void {
+    this.logger.warn(
+      JSON.stringify({
+        level: 'warn',
+        msg: 'Falha ao acionar notificacao pos-agendamento; agendamento foi criado normalmente.',
+        event: 'notification_trigger_failed',
+        tipo,
+        clinicaId,
+        agendamentoId,
+        erro: error instanceof Error ? error.message : String(error),
+      }),
+    );
   }
 }
