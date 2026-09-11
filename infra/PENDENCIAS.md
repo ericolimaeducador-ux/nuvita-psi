@@ -254,3 +254,32 @@ setado manualmente numa sessão anterior e `IA_USO_ENCRYPTION_KEY` já está lá
 **Correção:** adicionar `IA_USO_ENCRYPTION_KEY: generateBase64Key(32)` (+ linha
 no template de saída) em `gen-production-secrets.mjs` quando for conveniente.
 Não antes deste merge.
+
+---
+
+## 13. `deploy-pages.yml` órfão desde o cutover pro Firebase Hosting — RESOLVIDO
+
+**Achado:** durante o pós-merge de `feature/clinic-onboarding-and-auth-gates`
+(2026-09-11). **Resolvido em 2026-09-11.**
+
+`deploy-pages.yml` (GitHub Pages) continuava disparando automaticamente em
+todo push que tocasse `apps/web/**`, publicando pra um domínio `*.github.io`
+que ninguém acessa desde que `psi.nuvita.app.br` virou 100% Firebase Hosting
+(Arquitetura A, cutover de DNS 2026-09-10/11). `deploy-web.yml` (Firebase),
+por sua vez, só tinha `workflow_dispatch` — o merge da feature de onboarding
+disparou o `deploy-pages.yml` (verde, mas inútil) e **não** publicou a
+mudança no site real; foi preciso disparo manual do `deploy-web.yml` pra
+Fase 12 chegar em produção. Retroativo: o loop devia ter sido fechado no
+próprio cutover e não foi.
+
+**Correção aplicada:**
+- `deploy-pages.yml`: removido o trigger `push`; fica só `workflow_dispatch`
+  como fallback manual (arquivo mantido, não apagado).
+- `deploy-web.yml`: trigger `push` (mesmos `paths`: `apps/web/**`,
+  `packages/shared/**`) adicionado de volta, ao lado do `workflow_dispatch`.
+  Comentário de cabeçalho atualizado (não fala mais em cutover pendente).
+
+Validado com `actionlint` (exit 0, sem findings) e parse YAML dos dois
+arquivos antes do commit. A partir do próximo push que tocar `apps/web/**`
+ou `packages/shared/**`, o deploy automático vai pro lugar certo sem
+disparo manual.

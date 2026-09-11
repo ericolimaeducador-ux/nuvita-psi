@@ -18,15 +18,19 @@ name: Deploy Web to Firebase Hosting
 #                             (mesmo secret ja usado pelo deploy-api.yml).
 #   - GCP_HOSTING_SA_EMAIL    github-hosting-deployer@nuvita-499800.iam.gserviceaccount.com.
 #
-# Enquanto o DNS de psi.nuvita.app.br / api-psi.nuvita.app.br ainda nao estiver
-# apontando pro Firebase, o deploy publica apenas nos dominios *.web.app; o
-# GitHub Pages (deploy-pages.yml) continua servindo psi.nuvita.app.br.
+# Cutover de DNS concluido (2026-09-10/11): psi.nuvita.app.br e
+# api-psi.nuvita.app.br ja servem via Firebase. deploy-pages.yml (GitHub
+# Pages) fica so como fallback manual — orfao desde este cutover.
 #
-# TRIGGER: por enquanto SO workflow_dispatch (manual). O gatilho `push` sera
-# adicionado no Bloco 3, junto com o cutover de DNS — assim o commit que
-# introduz este arquivo / firebase.json / .firebaserc nao dispara deploy
-# antes da hora. Ate la, o publish so acontece se rodado a mao.
+# TRIGGER: push em main (mesmos paths que o deploy-pages.yml tinha) +
+# workflow_dispatch pra disparo manual quando precisar.
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared/**'
+      - '.github/workflows/deploy-web.yml'
   workflow_dispatch:
 
 # Um deploy por vez; nao cancela um deploy em andamento.

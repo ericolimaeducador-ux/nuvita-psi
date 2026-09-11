@@ -2,13 +2,13 @@ name: Deploy Web to GitHub Pages
 
 # Publica o frontend (apps/web) no GitHub Pages.
 # Pré-requisito (uma vez): Settings > Pages > Source = "GitHub Actions".
+#
+# ÓRFÃO desde o cutover de DNS pro Firebase Hosting (Arquitetura A,
+# 2026-09-10/11): psi.nuvita.app.br é 100% servido pelo Firebase
+# (deploy-web.yml) — este workflow publica pra um domínio *.github.io que
+# ninguém acessa. Mantido só como fallback manual (workflow_dispatch);
+# NÃO dispara mais em push. Ver infra/PENDENCIAS.md.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/**'
-      - 'packages/shared/**'
-      - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
 permissions:
