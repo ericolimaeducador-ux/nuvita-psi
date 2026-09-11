@@ -73,6 +73,21 @@ const clinicaSchema = z.object({
 });
 type ClinicaForm = z.infer<typeof clinicaSchema>;
 
+// Campos mínimos p/ criar clínica + 1º admin pela UI (mesmos da CLI bootstrap-admin).
+// A senha do admin NÃO é digitada aqui — é gerada no backend.
+const novaClinicaSchema = z.object({
+  nome: z.string().min(1, 'Informe o nome.'),
+  cnpj: z.string().min(11, 'CNPJ inválido.'),
+  plano: z.enum(['basico', 'profissional', 'enterprise']),
+  fusoHorario: z.string().min(1, 'Informe o fuso horário.'),
+  duracaoConsultaPadrao: z
+    .string()
+    .refine((s) => Number.isInteger(Number(s)) && Number(s) >= 5, 'Mínimo de 5 minutos.'),
+  adminNome: z.string().min(1, 'Informe o nome do admin.'),
+  adminEmail: z.string().email('E-mail inválido.'),
+});
+type NovaClinicaForm = z.infer<typeof novaClinicaSchema>;
+
 const PLANO_LABEL: Record<ClinicaAdmin['plano'], string> = {
   basico: 'Básico',
   profissional: 'Profissional',
@@ -100,6 +115,14 @@ export function SuperAdminPage() {
   const [editTarget, setEditTarget] = useState<UsuarioAdmin | null>(null);
   const [resetTarget, setResetTarget] = useState<UsuarioAdmin | null>(null);
   const [clinicaTarget, setClinicaTarget] = useState<ClinicaAdmin | null>(null);
+  const [novaClinicaOpen, setNovaClinicaOpen] = useState(false);
+  // Segredos da clínica recém-criada, exibidos UMA vez (senha temporária + chave 2FA do admin).
+  const [segredosClinica, setSegredosClinica] = useState<{
+    clinicaNome: string;
+    adminEmail: string;
+    senhaTemporaria: string;
+    base32: string | null;
+  } | null>(null);
   // Chave TOTP recém-gerada, exibida uma única vez para cadastrar no autenticador.
   const [twoFaSetup, setTwoFaSetup] = useState<{ email: string; setup: TwoFactorSetup } | null>(null);
   const [twoFaTarget, setTwoFaTarget] = useState<UsuarioAdmin | null>(null);
@@ -115,6 +138,10 @@ export function SuperAdminPage() {
   const editForm = useForm<EditForm>({ resolver: zodResolver(editSchema) });
   const resetForm = useForm<ResetForm>({ resolver: zodResolver(resetSchema) });
   const clinicaForm = useForm<ClinicaForm>({ resolver: zodResolver(clinicaSchema) });
+  const novaClinicaForm = useForm<NovaClinicaForm>({
+    resolver: zodResolver(novaClinicaSchema),
+    defaultValues: { plano: 'basico', fusoHorario: 'America/Sao_Paulo', duracaoConsultaPadrao: '50' },
+  });
 
   // Query params
   const queryParams = {
@@ -201,6 +228,32 @@ export function SuperAdminPage() {
       void qc.invalidateQueries({ queryKey: ['super-admin', 'clinicas'] });
     },
     onError: (e) => toast.error('Erro', apiErrorMessage(e)),
+  });
+
+  const criarClinicaMut = useMutation({
+    mutationFn: (v: NovaClinicaForm) =>
+      superAdminApi.criarClinica({
+        clinica: {
+          nome: v.nome,
+          cnpj: v.cnpj,
+          plano: v.plano,
+          fusoHorario: v.fusoHorario,
+          duracaoConsultaPadrao: Number(v.duracaoConsultaPadrao),
+        },
+        primeiroAdmin: { nome: v.adminNome, email: v.adminEmail },
+      }),
+    onSuccess: (res) => {
+      setNovaClinicaOpen(false);
+      novaClinicaForm.reset();
+      setSegredosClinica({
+        clinicaNome: res.clinica.nome,
+        adminEmail: res.admin.email,
+        senhaTemporaria: res.senhaTemporaria,
+        base32: res.twoFactorSetup?.base32 ?? null,
+      });
+      void qc.invalidateQueries({ queryKey: ['super-admin', 'clinicas'] });
+    },
+    onError: (e) => toast.error('Erro ao criar clínica', apiErrorMessage(e)),
   });
 
   function openEditClinica(c: ClinicaAdmin) {
@@ -381,6 +434,12 @@ export function SuperAdminPage() {
         </TabsContent>
 
         <TabsContent value="clinicas" className="mt-4 space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => setNovaClinicaOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nova clínica
+            </Button>
+          </div>
           <Card>
             <CardContent className="p-0">
               <Table>
@@ -806,6 +865,154 @@ export function SuperAdminPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Nova clínica (cria clínica + 1º admin; senha gerada no backend) */}
+      <Dialog open={novaClinicaOpen} onOpenChange={setNovaClinicaOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nova clínica</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={novaClinicaForm.handleSubmit((v) => criarClinicaMut.mutate(v))}
+            className="space-y-4 py-2"
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-1.5">
+                <Label>Nome da clínica</Label>
+                <Input {...novaClinicaForm.register('nome')} />
+                {novaClinicaForm.formState.errors.nome && (
+                  <p className="text-xs text-destructive">{novaClinicaForm.formState.errors.nome.message}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>CNPJ</Label>
+                <Input placeholder="Só números" {...novaClinicaForm.register('cnpj')} />
+                {novaClinicaForm.formState.errors.cnpj && (
+                  <p className="text-xs text-destructive">{novaClinicaForm.formState.errors.cnpj.message}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Plano</Label>
+                <Select
+                  defaultValue="basico"
+                  onValueChange={(p) => novaClinicaForm.setValue('plano', p as NovaClinicaForm['plano'])}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(PLANO_LABEL) as ClinicaAdmin['plano'][]).map((p) => (
+                      <SelectItem key={p} value={p}>{PLANO_LABEL[p]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Fuso horário</Label>
+                <Input {...novaClinicaForm.register('fusoHorario')} />
+                {novaClinicaForm.formState.errors.fusoHorario && (
+                  <p className="text-xs text-destructive">{novaClinicaForm.formState.errors.fusoHorario.message}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Duração padrão da consulta (min)</Label>
+                <Input type="number" {...novaClinicaForm.register('duracaoConsultaPadrao')} />
+                {novaClinicaForm.formState.errors.duracaoConsultaPadrao && (
+                  <p className="text-xs text-destructive">
+                    {novaClinicaForm.formState.errors.duracaoConsultaPadrao.message}
+                  </p>
+                )}
+              </div>
+              <div className="col-span-2 border-t border-border pt-3 space-y-1">
+                <p className="text-sm font-medium">Primeiro administrador da clínica</p>
+                <p className="text-xs text-muted-foreground">
+                  A senha é gerada automaticamente e exibida uma única vez após a criação.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Nome do admin</Label>
+                <Input {...novaClinicaForm.register('adminNome')} />
+                {novaClinicaForm.formState.errors.adminNome && (
+                  <p className="text-xs text-destructive">{novaClinicaForm.formState.errors.adminNome.message}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>E-mail do admin</Label>
+                <Input type="email" {...novaClinicaForm.register('adminEmail')} />
+                {novaClinicaForm.formState.errors.adminEmail && (
+                  <p className="text-xs text-destructive">{novaClinicaForm.formState.errors.adminEmail.message}</p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setNovaClinicaOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={criarClinicaMut.isPending}>
+                {criarClinicaMut.isPending ? 'Criando…' : 'Criar clínica'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: segredos da clínica recém-criada (aparecem uma única vez) */}
+      <Dialog open={!!segredosClinica} onOpenChange={(o) => { if (!o) setSegredosClinica(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Clínica criada — {segredosClinica?.clinicaNome}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Repasse ao administrador (<span className="font-medium text-foreground">{segredosClinica?.adminEmail}</span>)
+              por um canal privado. Ele será obrigado a trocar a senha no primeiro acesso.
+            </p>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Senha temporária</Label>
+              <div className="flex items-center gap-2 rounded-md border border-border bg-secondary p-3">
+                <code className="flex-1 text-sm font-mono break-all select-all">
+                  {segredosClinica?.senhaTemporaria}
+                </code>
+                <Button
+                  type="button" variant="ghost" size="icon" title="Copiar senha"
+                  onClick={() => {
+                    if (segredosClinica) {
+                      void navigator.clipboard.writeText(segredosClinica.senhaTemporaria);
+                      toast.success('Senha copiada.');
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {segredosClinica?.base32 && (
+              <div className="space-y-1">
+                <Label className="text-xs">Chave 2FA (Google Authenticator)</Label>
+                <div className="flex items-center gap-2 rounded-md border border-border bg-secondary p-3">
+                  <code className="flex-1 text-sm font-mono break-all select-all">{segredosClinica.base32}</code>
+                  <Button
+                    type="button" variant="ghost" size="icon" title="Copiar chave"
+                    onClick={() => {
+                      if (segredosClinica?.base32) {
+                        void navigator.clipboard.writeText(segredosClinica.base32);
+                        toast.success('Chave copiada.');
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-destructive">
+              Nem a senha nem a chave 2FA serão exibidas novamente.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setSegredosClinica(null)}>Concluído</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

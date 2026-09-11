@@ -377,6 +377,25 @@ export interface UpdateClinicaPayload {
   ativo?: boolean;
 }
 
+export interface CriarClinicaPayload {
+  clinica: {
+    nome: string;
+    cnpj: string;
+    plano: ClinicaAdmin['plano'];
+    fusoHorario: string;
+    duracaoConsultaPadrao: number;
+  };
+  primeiroAdmin: { nome: string; email: string };
+}
+
+export interface CriarClinicaResponse {
+  clinica: { id: string; nome: string; plano: ClinicaAdmin['plano'] };
+  admin: { id: string; nome: string; email: string; papel: Papel };
+  /** Devolvida UMA vez — repassar ao cliente por fora. */
+  senhaTemporaria: string;
+  twoFactorSetup?: { base32: string };
+}
+
 export const superAdminApi = {
   listUsuarios: (params: ListUsersParams = {}) =>
     api.get<ListUsuariosResult>('/super-admin/usuarios', { params }).then((r) => r.data),
@@ -392,6 +411,8 @@ export const superAdminApi = {
     api.post<TwoFactorSetup>(`/super-admin/usuarios/${id}/reset-2fa`).then((r) => r.data),
   listClinicas: () =>
     api.get<{ items: ClinicaAdmin[]; total: number }>('/super-admin/clinicas').then((r) => r.data),
+  criarClinica: (payload: CriarClinicaPayload) =>
+    api.post<CriarClinicaResponse>('/super-admin/clinicas', payload).then((r) => r.data),
   updateClinica: (id: string, payload: UpdateClinicaPayload) =>
     api.patch<ClinicaAdmin>(`/super-admin/clinicas/${id}`, payload).then((r) => r.data),
 };

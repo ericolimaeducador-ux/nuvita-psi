@@ -214,3 +214,18 @@ sessão antes da troca, essa sessão sobrevive à troca de senha. Risco baixo
 hoje (contas recém-criadas, sem histórico de uso), mas vira prioridade real
 conforme o volume de clínicas cresce. Considerar revogação de refresh tokens
 na troca forçada como parte de um hardening futuro.
+
+---
+
+## 11. Nota de processo — `git checkout` quase perdeu trabalho da Fase 12
+
+**Achado:** durante a Fase 12 de `feature/clinic-onboarding-and-auth-gates`
+(2026-09-10). Não é item de código.
+
+A Fase 12 quase perdeu trabalho não commitado por causa de um `git checkout`
+usado pra reverter um hack temporário de dev.
+
+Lição: preferir `git stash` em vez de `git checkout` ao reverter mudanças
+temporárias enquanto há trabalho de fase ainda não commitado; ou commitar a
+fase assim que o Red/Green fechar, antes de qualquer experimentação extra de
+UI (como o hack de captura de screenshot).
