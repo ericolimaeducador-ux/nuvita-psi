@@ -229,3 +229,28 @@ Lição: preferir `git stash` em vez de `git checkout` ao reverter mudanças
 temporárias enquanto há trabalho de fase ainda não commitado; ou commitar a
 fase assim que o Red/Green fechar, antes de qualquer experimentação extra de
 UI (como o hack de captura de screenshot).
+
+---
+
+## 12. `gen-production-secrets.mjs` não inclui `IA_USO_ENCRYPTION_KEY`
+
+**Achado:** durante o pré-merge de `feature/clinic-onboarding-and-auth-gates`
+(2026-09-10). **Não bloqueante.**
+
+`scripts/gen-production-secrets.mjs` gera valores aleatórios para
+`PATIENT_DATA_ENCRYPTION_KEY`, `PATIENT_DATA_HASH_KEY` e
+`PRONTUARIO_SIGNATURE_SECRET`, mas **não** para `IA_USO_ENCRYPTION_KEY` (var
+obrigatória desde a feature `ia-usage-audit-trail`, validada em
+`config.service.ts`). O script está desatualizado para **reconstrução de
+ambiente do zero**.
+
+**Não afeta o deploy corrente.** O `deploy-api.yml` não regenera segredos no
+CI — ele escreve o GitHub Secret `CLOUDRUN_ENV_YAML` verbatim para
+`cloudrun.env.yaml` e faz `gcloud run deploy --env-vars-file`. O secret já foi
+setado manualmente numa sessão anterior e `IA_USO_ENCRYPTION_KEY` já está lá
+(também presente em `apps/api/.env.production`, que é a origem de
+`gen-cloudrun-env.cjs`). Mudança de código no merge não toca nisso.
+
+**Correção:** adicionar `IA_USO_ENCRYPTION_KEY: generateBase64Key(32)` (+ linha
+no template de saída) em `gen-production-secrets.mjs` quando for conveniente.
+Não antes deste merge.
