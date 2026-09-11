@@ -195,3 +195,45 @@ describe('ClinicasService.onboard — observabilidade (Fase 13)', () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 });
+
+// Amendment (2026-09-11) em feature-forced-password-change.md: PSICOLOGO
+// criado pelo admin de clínica também nasce com deveTrocarSenha=true — mesmo
+// CreateUserInput que Fase 7 já estende, mesma senha-temporária-via-WhatsApp
+// que motivou a feature original.
+describe('ClinicasService.createUsuario — deveTrocarSenha para PSICOLOGO (amendment 2026-09-11)', () => {
+  const adminContext = {
+    ip: '127.0.0.1',
+    userAgent: 'jest',
+    user: { sub: 'adm-1', email: 'admin@clinica.test', papel: Papel.ADMIN, clinicaId: 'cli-1', jti: 'j1', typ: 'access' as const },
+  };
+
+  it('papel PSICOLOGO → users.create() recebe deveTrocarSenha: true', async () => {
+    const { service, users } = makeService({
+      clinicas: { findById: jest.fn().mockResolvedValue({ id: 'cli-1', ativo: true }) },
+    });
+
+    await service.createUsuario(
+      'cli-1',
+      { nome: 'Dra. Ana', email: 'ana@clinica.test', password: 'senhaGerada123', papel: Papel.PSICOLOGO },
+      adminContext,
+    );
+
+    expect(users.create).toHaveBeenCalledWith(expect.objectContaining({ deveTrocarSenha: true }));
+  });
+
+  it('papel SECRETARIA → users.create() NÃO recebe deveTrocarSenha: true (fora do escopo)', async () => {
+    const { service, users } = makeService({
+      clinicas: { findById: jest.fn().mockResolvedValue({ id: 'cli-1', ativo: true }) },
+    });
+
+    await service.createUsuario(
+      'cli-1',
+      { nome: 'Secretária', email: 'sec@clinica.test', password: 'senhaGerada123', papel: Papel.SECRETARIA },
+      adminContext,
+    );
+
+    expect(users.create).toHaveBeenCalledWith(
+      expect.not.objectContaining({ deveTrocarSenha: true }),
+    );
+  });
+});

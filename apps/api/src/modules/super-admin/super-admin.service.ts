@@ -126,6 +126,11 @@ export class SuperAdminService {
       clinicaId: dto.clinicaId ?? null,
       twoFactorSecret: twoFactorSetup?.base32,
       registroProfissional: dto.registroProfissional,
+      // Amendment (2026-09-11) em feature-forced-password-change.md: mesma
+      // regra do ClinicasService.createUsuario() — PSICOLOGO criado aqui
+      // (endpoint genérico do super-admin, qualquer clínica) também nasce
+      // com troca obrigatória de senha.
+      deveTrocarSenha: dto.papel === Papel.PSICOLOGO,
     });
 
     return { ...toPublicUser(user), twoFactorSetup };

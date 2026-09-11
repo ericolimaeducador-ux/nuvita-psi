@@ -176,6 +176,11 @@ export class ClinicasService {
       papel: dto.papel,
       clinicaId: adminClinicaId,
       twoFactorSecret: twoFactorSetup?.base32,
+      // Amendment (2026-09-11) em feature-forced-password-change.md: PSICOLOGO
+      // também recebe senha gerada e repassada por fora (mesma exposição via
+      // WhatsApp que motivou a feature original) — nasce com troca obrigatória.
+      // SECRETARIA fica fora do escopo.
+      deveTrocarSenha: dto.papel === Papel.PSICOLOGO,
     });
 
     await this.auditLogs.create({
