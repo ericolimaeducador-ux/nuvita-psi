@@ -4,6 +4,8 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -50,6 +52,8 @@ export interface AuthResponse extends AuthTokens {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(AUDIT_LOG_REPOSITORY) private readonly auditLogs: AuditLogRepository,
@@ -210,6 +214,23 @@ export class AuthService {
     context: RequestContext,
   ): Promise<{ user: PublicUser }> {
     if (versao !== TERMOS_DE_USO_VERSAO_ATUAL) {
+      if (!TERMOS_DE_USO_VERSAO_ATUAL) {
+        // Constante compartilhada vazia no runtime (build quebrado): o gate não
+        // tem versão vigente para validar. Fail-closed — ninguém aceita nada.
+        this.logEventoObservabilidade('error', {
+          msg: 'Versao vigente dos Termos de Uso indisponivel no runtime.',
+          event: 'terms_source_unavailable',
+          userId,
+        });
+        throw new ServiceUnavailableException('Termos de Uso indisponiveis no momento.');
+      }
+      this.logEventoObservabilidade('warn', {
+        msg: 'Aceite de Termos rejeitado: versao invalida ou desatualizada.',
+        event: 'gate_endpoint_4xx',
+        status: 400,
+        gate: 'terms',
+        userId,
+      });
       throw new BadRequestException('Versao dos Termos de Uso invalida ou desatualizada.');
     }
 
@@ -222,9 +243,11 @@ export class AuthService {
       return { user: toPublicUser(user) };
     }
 
-    const updated = await this.users.update(userId, {
-      termosAceitos: { versao, dataAceite: new Date() },
-    });
+    const updated = await this.persistirEstadoDoGate(
+      'terms',
+      userId,
+      () => this.users.update(userId, { termosAceitos: { versao, dataAceite: new Date() } }),
+    );
     if (!updated) {
       throw new UnauthorizedException('Usuario inativo ou inexistente.');
     }
@@ -258,11 +281,20 @@ export class AuthService {
     }
 
     if (!user.deveTrocarSenha) {
+      this.logEventoObservabilidade('warn', {
+        msg: 'Troca de senha obrigatoria rejeitada: nao ha troca pendente para a conta.',
+        event: 'gate_endpoint_4xx',
+        status: 409,
+        gate: 'password',
+        userId,
+      });
       throw new ConflictException('Nao ha troca de senha obrigatoria pendente para esta conta.');
     }
 
     const passwordHash = await bcrypt.hash(novaSenha, this.configService.getConfig().bcryptRounds);
-    const updated = await this.users.update(userId, { passwordHash, deveTrocarSenha: false });
+    const updated = await this.persistirEstadoDoGate('password', userId, () =>
+      this.users.update(userId, { passwordHash, deveTrocarSenha: false }),
+    );
     if (!updated) {
       throw new UnauthorizedException('Usuario inativo ou inexistente.');
     }
@@ -276,6 +308,42 @@ export class AuthService {
     });
 
     return { user: toPublicUser(updated) };
+  }
+
+  /**
+   * Persiste a mudança de estado de um gate pós-login (aceite de termos ou
+   * troca de senha obrigatória). Se a escrita lançar, emite
+   * `auth_gate_persist_failure` (§11 do TDD — o usuário completou o gate mas
+   * ficou preso nele) e re-lança.
+   */
+  private async persistirEstadoDoGate<T>(
+    gate: 'terms' | 'password',
+    userId: string,
+    persist: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await persist();
+    } catch (error) {
+      this.logEventoObservabilidade('error', {
+        msg: 'Falha ao persistir a conclusao de um gate pos-login.',
+        event: 'auth_gate_persist_failure',
+        gate,
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Observabilidade (§11 do TDD): sem lib de métricas — log estruturado, JSON
+   * numa linha, só ids/enums. Nunca senha, senha nova, segredo 2FA nem texto
+   * dos Termos.
+   */
+  private logEventoObservabilidade(
+    level: 'error' | 'warn',
+    payload: Record<string, unknown>,
+  ): void {
+    this.logger[level](JSON.stringify({ level, ...payload }));
   }
 
   async validateAccessPayload(payload: AuthTokenPayload): Promise<AuthenticatedUser> {
