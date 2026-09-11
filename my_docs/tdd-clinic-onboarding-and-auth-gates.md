@@ -704,6 +704,27 @@ rule: new tests only).
 > `AuthGatesGuard` + `@GateExempt()` method-level on the 3 auth-controller
 > escape hatches (`logout`, `aceitar-termos`, `trocar-senha-obrigatoria`) — not
 > class-level, which would break the public `login`/`register`/`refresh`.
+>
+> Implementation note (2026-09-10): Phase 13 emitted the §11 structured events
+> as JSON-line logs (same mechanism as `gate_guard_rejections` from Phase 2b
+> and the AI-audit feature). Backend call sites:
+> - `onboarding_partial_failure` — `ClinicasService.onboard()` catch path,
+>   `stage: create_admin` before compensation, `stage: compensate_clinic` if
+>   `clinicas.delete` also throws. `userId` = `atorUserId` or `null`.
+> - `auth_gate_persist_failure` — new `persistirEstadoDoGate()` wrapper around
+>   the `users.update` in `aceitarTermos` / `trocarSenhaObrigatoria`; logs
+>   `gate: terms | password` and re-throws. The pre-existing `!updated →
+>   UnauthorizedException` (inactive-user race) is left as-is, not reclassified
+>   as a persist failure.
+> - `gate_endpoint_4xx` — `warn` with `status` before the `400` (wrong terms
+>   version) and `409` (no pending forced change) throws. The password-policy
+>   `400` stays at the DTO/ValidationPipe layer and is not logged here.
+> - `terms_source_unavailable` — defensive branch in `aceitarTermos`: when the
+>   shared `TERMOS_DE_USO_VERSAO_ATUAL` is falsy at runtime, log `error` and
+>   throw `503`. In practice this is build-time-prevented (`copy-legal.mjs`
+>   exits non-zero on a missing source or a version mismatch, and the constant
+>   is compile-time), so the runtime branch is a belt-and-braces guard, not the
+>   primary safeguard. No web-side emit (no logging infra in `apps/web`).
 
 ---
 

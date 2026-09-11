@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, Logger } from '@nestjs/common';
 import { Papel } from '../../../../../../packages/shared/src/auth';
 import { AuditEvent } from '../../auth/domain/audit-event.enum';
 import { PlanoClinica } from '../domain/clinica.entity';
@@ -127,5 +127,71 @@ describe('ClinicasService.onboard (Fase 7)', () => {
       expect.not.objectContaining({ deveTrocarSenha: true }),
     );
     expect(auditLogs.create).toHaveBeenCalledWith(expect.objectContaining({ userId: 'adm-1' }));
+  });
+});
+
+describe('ClinicasService.onboard — observabilidade (Fase 13)', () => {
+  let errorSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => errorSpy.mockRestore());
+
+  function payloads() {
+    return errorSpy.mock.calls.map((c) => JSON.parse(c[0] as string));
+  }
+
+  it('falha ao criar o admin → loga onboarding_partial_failure stage=create_admin', async () => {
+    const { service } = makeService({
+      users: { create: jest.fn().mockRejectedValue(new Error('boom')) },
+    });
+
+    await expect(service.onboard(dto, ctx, { atorUserId: 'super-1' })).rejects.toThrow('boom');
+
+    expect(payloads()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: 'error',
+          event: 'onboarding_partial_failure',
+          stage: 'create_admin',
+          clinicaId: 'cli-1',
+          userId: 'super-1',
+        }),
+      ]),
+    );
+  });
+
+  it('falha ao criar o admin E a compensação falha → loga stage=compensate_clinic', async () => {
+    const { service } = makeService({
+      users: { create: jest.fn().mockRejectedValue(new Error('boom')) },
+      clinicas: {
+        findByCnpj: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: 'cli-1', plano: 'basico' }),
+        delete: jest.fn().mockRejectedValue(new Error('delete down')),
+      },
+    });
+
+    await expect(service.onboard(dto, ctx)).rejects.toThrow('boom');
+
+    expect(payloads()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: 'error',
+          event: 'onboarding_partial_failure',
+          stage: 'compensate_clinic',
+          clinicaId: 'cli-1',
+        }),
+      ]),
+    );
+  });
+
+  it('onboarding bem-sucedido → nenhum evento de erro', async () => {
+    const { service } = makeService();
+
+    await service.onboard(dto, ctx, { atorUserId: 'super-1' });
+
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 });

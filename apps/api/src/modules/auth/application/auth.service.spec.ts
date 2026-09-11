@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { Papel } from '../../../../../../packages/shared/src/auth';
 import { TERMOS_DE_USO_VERSAO_ATUAL } from '../../../../../../packages/shared/src/termos';
 import { AuditLogRepository } from './ports/audit-log.repository';
@@ -264,5 +264,115 @@ describe('AuthService.trocarSenhaObrigatoria (Fase 6)', () => {
 
     expect(asRecord.passwordHash).toBeUndefined();
     expect(asRecord.twoFactorSecret).toBeUndefined();
+  });
+});
+
+describe('AuthService — observabilidade dos gates (Fase 13)', () => {
+  const context = { ip: '127.0.0.1', userAgent: 'jest' };
+  let errorSpy: jest.SpyInstance;
+  let warnSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  const payloadsOf = (spy: jest.SpyInstance) =>
+    spy.mock.calls.map((c) => JSON.parse(c[0] as string));
+
+  it('aceitarTermos: versão inválida → warn gate_endpoint_4xx status=400 gate=terms', async () => {
+    const { service } = makeService(makeUser({ papel: Papel.PSICOLOGO }));
+
+    await expect(service.aceitarTermos('u1', '0.9', context)).rejects.toThrow(BadRequestException);
+
+    expect(payloadsOf(warnSpy)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: 'warn',
+          event: 'gate_endpoint_4xx',
+          status: 400,
+          gate: 'terms',
+          userId: 'u1',
+        }),
+      ]),
+    );
+  });
+
+  it('trocarSenhaObrigatoria: flag já false → warn gate_endpoint_4xx status=409 gate=password', async () => {
+    const { service } = makeService(makeUser({ deveTrocarSenha: false }));
+
+    await expect(
+      service.trocarSenhaObrigatoria('u1', 'novaSenhaSegura123', context),
+    ).rejects.toThrow(ConflictException);
+
+    expect(payloadsOf(warnSpy)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: 'warn',
+          event: 'gate_endpoint_4xx',
+          status: 409,
+          gate: 'password',
+          userId: 'u1',
+        }),
+      ]),
+    );
+  });
+
+  it('aceitarTermos: falha ao persistir → error auth_gate_persist_failure gate=terms', async () => {
+    const user = makeUser({ papel: Papel.PSICOLOGO, termosAceitos: null });
+    const { service, users } = makeService(user);
+    (users.update as jest.Mock).mockRejectedValueOnce(new Error('mongo down'));
+
+    await expect(
+      service.aceitarTermos('u1', TERMOS_DE_USO_VERSAO_ATUAL, context),
+    ).rejects.toThrow('mongo down');
+
+    expect(payloadsOf(errorSpy)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: 'error',
+          event: 'auth_gate_persist_failure',
+          gate: 'terms',
+          userId: 'u1',
+        }),
+      ]),
+    );
+  });
+
+  it('trocarSenhaObrigatoria: falha ao persistir → error auth_gate_persist_failure gate=password', async () => {
+    const user = makeUser({ deveTrocarSenha: true });
+    const { service, users } = makeService(user);
+    (users.update as jest.Mock).mockRejectedValueOnce(new Error('mongo down'));
+
+    await expect(
+      service.trocarSenhaObrigatoria('u1', 'novaSenhaSegura123', context),
+    ).rejects.toThrow('mongo down');
+
+    expect(payloadsOf(errorSpy)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: 'error',
+          event: 'auth_gate_persist_failure',
+          gate: 'password',
+          userId: 'u1',
+        }),
+      ]),
+    );
+  });
+
+  it('caminho feliz de cada gate → nenhum evento de erro/warn', async () => {
+    const psi = makeService(makeUser({ papel: Papel.PSICOLOGO, termosAceitos: null }));
+    await psi.service.aceitarTermos('u1', TERMOS_DE_USO_VERSAO_ATUAL, context);
+
+    const pwd = makeService(makeUser({ deveTrocarSenha: true }));
+    await pwd.service.trocarSenhaObrigatoria('u1', 'novaSenhaSegura123', context);
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });

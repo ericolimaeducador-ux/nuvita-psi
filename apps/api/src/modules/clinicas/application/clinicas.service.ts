@@ -93,12 +93,22 @@ export class ClinicasService {
       });
     } catch (error) {
       // Clínica sem admin é lixo — compensa para não deixar órfã. Se a
-      // compensação também falhar, registra: sobra limpeza manual.
+      // compensação também falhar, sobra limpeza manual.
+      this.logEventoObservabilidade('error', {
+        msg: 'Onboarding de clinica falhou ao criar o primeiro admin; compensando a clinica criada.',
+        event: 'onboarding_partial_failure',
+        stage: 'create_admin',
+        clinicaId: clinica.id,
+        userId: options?.atorUserId ?? null,
+      });
       await this.clinicas.delete(clinica.id).catch((cleanupError) => {
-        this.logger.error(
-          `Onboarding falhou ao criar o admin E a compensacao da clinica ${clinica.id} falhou. ` +
-            `Clinica orfa — limpeza manual necessaria. ${cleanupError}`,
-        );
+        this.logEventoObservabilidade('error', {
+          msg: `Compensacao da clinica orfa falhou; limpeza manual necessaria. ${cleanupError}`,
+          event: 'onboarding_partial_failure',
+          stage: 'compensate_clinic',
+          clinicaId: clinica.id,
+          userId: options?.atorUserId ?? null,
+        });
       });
       throw error;
     }
@@ -194,6 +204,18 @@ export class ClinicasService {
 
   private async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, this.configService.getConfig().bcryptRounds);
+  }
+
+  /**
+   * Observabilidade (§11 do TDD): o projeto não tem lib de métricas — o
+   * mecanismo é o log estruturado (JSON numa linha, só ids/enums, nunca
+   * segredos ou dados de paciente).
+   */
+  private logEventoObservabilidade(
+    level: 'error' | 'warn',
+    payload: Record<string, unknown>,
+  ): void {
+    this.logger[level](JSON.stringify({ level, ...payload }));
   }
 
   private buildTwoFactorSetup(
