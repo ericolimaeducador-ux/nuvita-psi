@@ -154,6 +154,8 @@ export class AuthService {
       throw new UnauthorizedException('Sessao invalida.');
     }
 
+    this.assertTokenNotStale(payload, user.tokensValidosApartirDe);
+
     await this.tokenRevocation.revoke(payload.jti, REFRESH_TOKEN_TTL_SECONDS);
     const tokens = await this.issueTokens(user);
 
@@ -293,7 +295,11 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(novaSenha, this.configService.getConfig().bcryptRounds);
     const updated = await this.persistirEstadoDoGate('password', userId, () =>
-      this.users.update(userId, { passwordHash, deveTrocarSenha: false }),
+      this.users.update(userId, {
+        passwordHash,
+        deveTrocarSenha: false,
+        tokensValidosApartirDe: new Date(),
+      }),
     );
     if (!updated) {
       throw new UnauthorizedException('Usuario inativo ou inexistente.');
@@ -356,6 +362,8 @@ export class AuthService {
       throw new UnauthorizedException('Usuario inativo ou inexistente.');
     }
 
+    this.assertTokenNotStale(payload, user.tokensValidosApartirDe);
+
     // Enriquece request.user com o estado de conta que o AuthGatesGuard avalia
     // (mesmo findById acima — sem round-trip extra).
     return {
@@ -363,6 +371,32 @@ export class AuthService {
       deveTrocarSenha: user.deveTrocarSenha ?? false,
       termosAceitos: user.termosAceitos ?? null,
     };
+  }
+
+  /**
+   * Revogação de sessão na troca de senha (feature-session-revocation-on-password-change).
+   * tokensValidosApartirDe ausente/null = nenhuma troca de senha jamais invalidou
+   * sessões deste usuário → NUNCA rejeitar nesse caso, é o critério de aceite
+   * mais sensível desta feature.
+   */
+  private assertTokenNotStale(
+    payload: AuthTokenPayload,
+    tokensValidosApartirDe: Date | null | undefined,
+  ): void {
+    if (!tokensValidosApartirDe) {
+      return;
+    }
+
+    const iatMs = payload.iat != null ? payload.iat * 1000 : undefined;
+    if (iatMs === undefined || iatMs < tokensValidosApartirDe.getTime()) {
+      this.logEventoObservabilidade('warn', {
+        msg: 'Token rejeitado: emitido antes da ultima troca de senha do usuario.',
+        event: 'token_rejected_stale_session',
+        userId: payload.sub,
+        typ: payload.typ,
+      });
+      throw new UnauthorizedException('Token invalido.');
+    }
   }
 
   private assertTwoFactorIfRequired(user: User, token?: string): void {

@@ -25,6 +25,12 @@ export interface User {
   /** Exceções por usuário sobre o padrão do papel (ver resolvePermissoes). */
   modulosConcedidos?: Modulo[];
   modulosRevogados?: Modulo[];
+  /**
+   * Revogação de sessão na troca de senha (feature-session-revocation-on-password-change).
+   * Ausente/null = nenhuma troca de senha jamais invalidou sessões deste usuário —
+   * NUNCA tratar ausência como rejeição.
+   */
+  tokensValidosApartirDe?: Date | null;
 }
 
 export type PublicUser = Omit<User, 'passwordHash' | 'twoFactorSecret'> & {

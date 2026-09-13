@@ -27,3 +27,23 @@ describe('users schema — campos dos auth gates (Fase 1)', () => {
     expect(UserSchema.path('termosAceitos').options.required).toBeFalsy();
   });
 });
+
+/**
+ * Fase 2a (feature-session-revocation-on-password-change): campo novo
+ * tokensValidosApartirDe no User schema. Usuário existente deve nascer
+ * SEM o campo (ausência = nunca invalidado) — por isso não pode ter
+ * default que force um valor, e não pode ser required.
+ */
+describe('users schema — tokensValidosApartirDe (Fase 2a)', () => {
+  it('tokensValidosApartirDe existe como campo Date', () => {
+    const path = UserSchema.path('tokensValidosApartirDe');
+    expect(path).toBeDefined();
+    expect(path.instance).toBe('Date');
+  });
+
+  it('tokensValidosApartirDe é opcional e sem default (ausência não pode virar um valor)', () => {
+    const path = UserSchema.path('tokensValidosApartirDe');
+    expect(path.options.required).toBeFalsy();
+    expect(path.options.default).toBeUndefined();
+  });
+});

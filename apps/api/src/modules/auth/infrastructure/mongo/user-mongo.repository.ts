@@ -72,6 +72,7 @@ export class UserMongoRepository implements UserRepository {
     if (input.modulosRevogados !== undefined) set['modulosRevogados'] = input.modulosRevogados;
     if (input.deveTrocarSenha !== undefined) set['deveTrocarSenha'] = input.deveTrocarSenha;
     if (input.termosAceitos !== undefined) set['termosAceitos'] = input.termosAceitos;
+    if (input.tokensValidosApartirDe !== undefined) set['tokensValidosApartirDe'] = input.tokensValidosApartirDe;
 
     const doc = await this.userModel
       .findByIdAndUpdate(id, { $set: set }, { new: true })
@@ -111,6 +112,7 @@ export class UserMongoRepository implements UserRepository {
         : null,
       modulosConcedidos: object.modulosConcedidos,
       modulosRevogados: object.modulosRevogados,
+      tokensValidosApartirDe: object.tokensValidosApartirDe,
     };
   }
 }

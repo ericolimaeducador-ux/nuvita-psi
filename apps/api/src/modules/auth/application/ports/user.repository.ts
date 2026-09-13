@@ -26,6 +26,8 @@ export interface UpdateUserInput {
   modulosRevogados?: Modulo[];
   deveTrocarSenha?: boolean;
   termosAceitos?: TermosAceitos | null;
+  /** Revogação de sessão na troca de senha (feature-session-revocation-on-password-change). */
+  tokensValidosApartirDe?: Date | null;
 }
 
 export interface UserFilters {

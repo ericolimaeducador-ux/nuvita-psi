@@ -64,6 +64,12 @@ export class UserMongo {
   // Ausente/null = nunca aceitou. Reaceite obrigatório a cada nova versão do termo.
   @Prop({ type: TermosAceitosSchema })
   termosAceitos?: TermosAceitosMongo;
+
+  // Revogação de sessão na troca de senha (feature-session-revocation-on-password-change).
+  // Estampado a cada troca de senha bem-sucedida. Ausente = nenhuma troca de senha
+  // jamais invalidou sessões deste usuário — NUNCA tratar ausência como rejeição.
+  @Prop({ type: Date })
+  tokensValidosApartirDe?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserMongo);

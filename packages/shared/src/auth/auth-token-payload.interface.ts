@@ -11,4 +11,6 @@ export interface AuthTokenPayload {
   registroProfissional?: string;
   jti: string;
   typ: 'access' | 'refresh';
+  /** Issued-at (segundos, epoch) — emitido automaticamente por todo JWT assinado. */
+  iat?: number;
 }

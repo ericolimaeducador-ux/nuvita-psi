@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, Logger, UnauthorizedException } from '@nestjs/common';
 import { Papel } from '../../../../../../packages/shared/src/auth';
 import { TERMOS_DE_USO_VERSAO_ATUAL } from '../../../../../../packages/shared/src/termos';
 import { AuditLogRepository } from './ports/audit-log.repository';
@@ -80,7 +80,7 @@ function makeService(user: User) {
     tokenRevocation as never,
   );
 
-  return { service, users, auditLogs };
+  return { service, users, auditLogs, jwtService, tokenRevocation };
 }
 
 const context = { ip: '127.0.0.1', userAgent: 'jest' };
@@ -374,5 +374,299 @@ describe('AuthService — observabilidade dos gates (Fase 13)', () => {
 
     expect(errorSpy).not.toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Fase 3 (feature-session-revocation-on-password-change): validateAccessPayload
+ * e refresh() passam a rejeitar token cujo iat é anterior a
+ * user.tokensValidosApartirDe. O caso mais sensível (critério de aceite
+ * fixado no design): tokensValidosApartirDe ausente/null NUNCA pode ser
+ * tratado como "sempre inválido" — significa "nenhuma troca de senha jamais
+ * invalidou sessões deste usuário", ou seja, sempre válido nesse check.
+ */
+describe('AuthService — revogação de sessão na troca de senha (Fase 3)', () => {
+  const accessPayload = {
+    typ: 'access' as const,
+    jti: 'access-jti',
+    sub: 'u1',
+    email: 'fulana@nuvita.test',
+    papel: Papel.PSICOLOGO,
+  };
+
+  const cutoff = new Date('2026-09-12T10:00:00.000Z');
+  const cutoffEpoch = Math.floor(cutoff.getTime() / 1000);
+
+  describe('validateAccessPayload', () => {
+    it('rejeita access token cujo iat é anterior a tokensValidosApartirDe', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: cutoff });
+      const { service } = makeService(user);
+
+      await expect(
+        service.validateAccessPayload({ ...accessPayload, iat: cutoffEpoch - 60 }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('aceita access token cujo iat é igual ou posterior a tokensValidosApartirDe', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: cutoff });
+      const { service } = makeService(user);
+
+      const result = await service.validateAccessPayload({ ...accessPayload, iat: cutoffEpoch + 60 });
+
+      expect(result.sub).toBe('u1');
+    });
+
+    it('REGRESSÃO CRÍTICA: tokensValidosApartirDe ausente nunca rejeita, mesmo com iat muito antigo', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: undefined });
+      const { service } = makeService(user);
+
+      const result = await service.validateAccessPayload({ ...accessPayload, iat: 1 });
+
+      expect(result.sub).toBe('u1');
+    });
+
+    it('REGRESSÃO CRÍTICA: tokensValidosApartirDe null nunca rejeita, mesmo com iat muito antigo', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: null });
+      const { service } = makeService(user);
+
+      const result = await service.validateAccessPayload({ ...accessPayload, iat: 1 });
+
+      expect(result.sub).toBe('u1');
+    });
+  });
+
+  describe('refresh', () => {
+    it('rejeita refresh token cujo iat é anterior a tokensValidosApartirDe', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: cutoff });
+      const { service, jwtService } = makeService(user);
+      (jwtService.verifyAsync as jest.Mock).mockResolvedValueOnce({
+        typ: 'refresh',
+        jti: 'refresh-jti',
+        sub: user.id,
+        email: user.email,
+        papel: user.papel,
+        iat: cutoffEpoch - 60,
+      });
+
+      await expect(service.refresh('refresh-token', context)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('aceita refresh token cujo iat é igual ou posterior a tokensValidosApartirDe', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: cutoff });
+      const { service, jwtService } = makeService(user);
+      (jwtService.verifyAsync as jest.Mock).mockResolvedValueOnce({
+        typ: 'refresh',
+        jti: 'refresh-jti',
+        sub: user.id,
+        email: user.email,
+        papel: user.papel,
+        iat: cutoffEpoch + 60,
+      });
+
+      const res = await service.refresh('refresh-token', context);
+
+      expect(res.user.id).toBe('u1');
+    });
+
+    it('REGRESSÃO CRÍTICA: tokensValidosApartirDe ausente nunca rejeita o refresh, mesmo com iat muito antigo', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: undefined });
+      const { service, jwtService } = makeService(user);
+      (jwtService.verifyAsync as jest.Mock).mockResolvedValueOnce({
+        typ: 'refresh',
+        jti: 'refresh-jti',
+        sub: user.id,
+        email: user.email,
+        papel: user.papel,
+        iat: 1,
+      });
+
+      const res = await service.refresh('refresh-token', context);
+
+      expect(res.user.id).toBe('u1');
+    });
+
+    it('REGRESSÃO CRÍTICA: tokensValidosApartirDe null nunca rejeita o refresh, mesmo com iat muito antigo', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: null });
+      const { service, jwtService } = makeService(user);
+      (jwtService.verifyAsync as jest.Mock).mockResolvedValueOnce({
+        typ: 'refresh',
+        jti: 'refresh-jti',
+        sub: user.id,
+        email: user.email,
+        papel: user.papel,
+        iat: 1,
+      });
+
+      const res = await service.refresh('refresh-token', context);
+
+      expect(res.user.id).toBe('u1');
+    });
+  });
+});
+
+/**
+ * Fase 4 (feature-session-revocation-on-password-change): trocarSenhaObrigatoria
+ * estampa tokensValidosApartirDe no mesmo write que troca a senha — mesma
+ * disciplina de falha já usada para deveTrocarSenha/termosAceitos (uma falha
+ * ao persistir não pode deixar o usuário com senha nova mas sem o stamp).
+ */
+describe('AuthService.trocarSenhaObrigatoria — revogação de sessão (Fase 4)', () => {
+  it('estampa tokensValidosApartirDe com a hora atual no mesmo update que troca a senha', async () => {
+    const user = makeUser({ deveTrocarSenha: true });
+    const { service, users } = makeService(user);
+
+    const before = Date.now();
+    await service.trocarSenhaObrigatoria('u1', 'novaSenhaSegura123', context);
+    const after = Date.now();
+
+    expect(users.update).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ tokensValidosApartirDe: expect.any(Date) }),
+    );
+    const patch = (users.update as jest.Mock).mock.calls[0][1];
+    expect(patch.tokensValidosApartirDe.getTime()).toBeGreaterThanOrEqual(before);
+    expect(patch.tokensValidosApartirDe.getTime()).toBeLessThanOrEqual(after);
+  });
+
+  it('falha ao persistir não estampa parcialmente — o erro se propaga sem reportar sucesso', async () => {
+    const user = makeUser({ deveTrocarSenha: true });
+    const { service, users } = makeService(user);
+    (users.update as jest.Mock).mockRejectedValueOnce(new Error('mongo down'));
+
+    await expect(
+      service.trocarSenhaObrigatoria('u1', 'novaSenhaSegura123', context),
+    ).rejects.toThrow('mongo down');
+  });
+});
+
+/**
+ * Fase 5 (feature-session-revocation-on-password-change): dois itens do
+ * mesmo tipo de garantia — visibilidade (evento de monitoring) e isolamento
+ * (a checagem de jti no Redis e a de tokensValidosApartirDe no Mongo não
+ * podem mascarar uma à outra).
+ *
+ * NOTA DE HONESTIDADE (mesmo espírito das Fases 2b/3): o bloco "independência"
+ * abaixo não tem Red de verdade — a ordem de checks já implementada nas
+ * Fases 3/4 (isRevoked antes, assertTokenNotStale depois, sequenciais e sem
+ * dependência mútua) já garante isso estruturalmente. Esses testes nascem
+ * verdes; o valor deles é travar a garantia como regressão, não provar algo
+ * novo agora. Já o bloco "monitoring" tem Red real: nenhum evento é emitido
+ * hoje em nenhuma rejeição.
+ */
+describe('AuthService — visibilidade e isolamento da revogação de sessão (Fase 5)', () => {
+  const accessPayload = {
+    typ: 'access' as const,
+    jti: 'access-jti',
+    sub: 'u1',
+    email: 'fulana@nuvita.test',
+    papel: Papel.PSICOLOGO,
+  };
+  const cutoff = new Date('2026-09-12T10:00:00.000Z');
+  const cutoffEpoch = Math.floor(cutoff.getTime() / 1000);
+
+  describe('independência entre a checagem de jti (Redis) e a de tokensValidosApartirDe (Mongo)', () => {
+    it('jti revogado rejeita mesmo com token fresco e sem tokensValidosApartirDe setado', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: undefined });
+      const { service, tokenRevocation } = makeService(user);
+      (tokenRevocation.isRevoked as jest.Mock).mockResolvedValueOnce(true);
+
+      await expect(
+        service.validateAccessPayload({ ...accessPayload, iat: Math.floor(Date.now() / 1000) }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('token stale rejeita mesmo com jti não revogado', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: cutoff });
+      const { service, tokenRevocation } = makeService(user);
+      (tokenRevocation.isRevoked as jest.Mock).mockResolvedValueOnce(false);
+
+      await expect(
+        service.validateAccessPayload({ ...accessPayload, iat: cutoffEpoch - 60 }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('nenhum dos dois mecanismos mascara o outro: quando ambos passam, o token é aceito', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: cutoff });
+      const { service, tokenRevocation } = makeService(user);
+      (tokenRevocation.isRevoked as jest.Mock).mockResolvedValueOnce(false);
+
+      const result = await service.validateAccessPayload({ ...accessPayload, iat: cutoffEpoch + 60 });
+
+      expect(result.sub).toBe('u1');
+    });
+  });
+
+  describe('evento de monitoring token_rejected_stale_session', () => {
+    let warnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+      warnSpy.mockRestore();
+    });
+
+    const payloadsOf = (spy: jest.SpyInstance) => spy.mock.calls.map((c) => JSON.parse(c[0] as string));
+
+    it('emite token_rejected_stale_session ao rejeitar access token stale', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: cutoff });
+      const { service } = makeService(user);
+
+      await expect(
+        service.validateAccessPayload({ ...accessPayload, iat: cutoffEpoch - 60 }),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(payloadsOf(warnSpy)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            level: 'warn',
+            event: 'token_rejected_stale_session',
+            userId: 'u1',
+            typ: 'access',
+          }),
+        ]),
+      );
+    });
+
+    it('emite token_rejected_stale_session ao rejeitar refresh token stale', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: cutoff });
+      const { service, jwtService } = makeService(user);
+      (jwtService.verifyAsync as jest.Mock).mockResolvedValueOnce({
+        typ: 'refresh',
+        jti: 'refresh-jti',
+        sub: user.id,
+        email: user.email,
+        papel: user.papel,
+        iat: cutoffEpoch - 60,
+      });
+
+      await expect(service.refresh('refresh-token', context)).rejects.toThrow(UnauthorizedException);
+
+      expect(payloadsOf(warnSpy)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            level: 'warn',
+            event: 'token_rejected_stale_session',
+            userId: 'u1',
+            typ: 'refresh',
+          }),
+        ]),
+      );
+    });
+
+    it('rejeição por jti revogado NÃO emite token_rejected_stale_session (evento distinto por causa)', async () => {
+      const user = makeUser({ papel: Papel.PSICOLOGO, tokensValidosApartirDe: undefined });
+      const { service, tokenRevocation } = makeService(user);
+      (tokenRevocation.isRevoked as jest.Mock).mockResolvedValueOnce(true);
+
+      await expect(
+        service.validateAccessPayload({ ...accessPayload, iat: Math.floor(Date.now() / 1000) }),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(payloadsOf(warnSpy)).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ event: 'token_rejected_stale_session' })]),
+      );
+    });
   });
 });
